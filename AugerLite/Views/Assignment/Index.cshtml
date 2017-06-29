@@ -1,0 +1,90 @@
+﻿@using Auger.Models;
+@model AssignmentIndexViewModel
+@{
+    ViewBag.Title = "Choose Assignment";
+}
+
+@section Breadcrumbs {
+  <li><a href="~/">Auger Home</a>
+  <li><a href="~/Assignment/SelectCourse">@Model.Course.ShortName</a>
+  <li>Assignments
+}
+
+<h3>All Assignments</h3>
+
+<div class="row">
+  <div class="col-md-6 col-xs-12">
+    <div class="panel panel-primary">
+      <div class="panel-heading"><h4>Unsubmitted Assignments</h4></div>
+      <div class="panel-body" style="padding: 0 17px 2px;">
+        @if (Model.UnsubmittedAssignments.Any())
+        {
+          foreach (var assignment in Model.UnsubmittedAssignments)
+          {
+                <a href="~/Assignment/Details/@assignment.AssignmentId" class="row list-group-item" style="margin-top: 2px">
+                  <div class="pull-right">
+                    <table style="height:40px;vertical-align:middle;">
+                      <tr>
+                        <th>Due:</th>
+                        <td style="padding-left:5px;">@assignment.DueDate.ToString()</td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div class="text-left">
+                    <h4><i class="glyphicon glyphicon-folder-open" style="margin-right:10px"></i>@assignment.AssignmentName</h4>
+                  </div>
+                </a>
+          }
+        }
+        else
+        {
+            <p>No unsubmitted assignments found</p>
+        }
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-xs-12">
+    <div class="panel panel-primary">
+      <div class="panel-heading"><h4>Submitted Assignments</h4></div>
+      <div class="panel-body" style="padding: 0 17px 2px;">
+        @if (Model.SubmittedAssignments.Any())
+        {
+          foreach (var submission in Model.SubmittedAssignments)
+          {
+            var dueString = "";
+            var due = submission.StudentAssignment.Assignment.DueDate;
+            if (due.HasValue)
+            {
+              dueString = due.Value.ToShortDateString() + " " + due.Value.ToShortTimeString();
+            }
+
+            <a href="~/Assignment/Details/@submission.StudentAssignment.AssignmentId" class="row list-group-item" style="margin-top: 2px">
+              <div class="pull-right">
+                <table style="height:40px;vertical-align:middle;">
+                  <tr>
+                    <th>Due:</th>
+                    <td style="padding-left:5px;">@dueString</td>
+                  </tr>
+                  <tr>
+                    <th>Submitted:</th>
+                    <td style="padding-left:5px;">@submission.SubmissionName</td>
+                  </tr>
+                </table>
+              </div>
+              <div class="text-left">
+                <h4><i class="glyphicon glyphicon-folder-open" style="margin-right:10px"></i>@submission.StudentAssignment.Assignment.AssignmentName</h4>
+              </div>
+            </a>
+          }
+        }
+        else
+        {
+            <p>No submitted assignments found</p>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="clearfix"></div>

@@ -1,0 +1,259 @@
+﻿@using Auger.Models
+
+@model TestResults
+
+@{
+    var results = Model;
+
+    var domTestComplete = results.DomTestComplete;
+    var hasDomErrors = domTestComplete && (results.Failures.Any() || results.Exceptions.Any());
+    var domErrorCount = 0;
+    if (hasDomErrors)
+    {
+      domErrorCount = results.Failures.Count + results.Exceptions.Count;
+    }
+
+    var htmlValidationComplete = results != null && results.HtmlValidationCompleted;
+    results?.W3CHtmlValidationMessages?.RemoveAll(m => m.Type != W3CHtmlValidationMessage.MessageTypes.Error);
+    var hasHtmlValidationErrors = htmlValidationComplete && results.W3CHtmlValidationMessages.Any();
+    var htmlValidationErrorCount = 0;
+    if (hasHtmlValidationErrors)
+    {
+      htmlValidationErrorCount = results.W3CHtmlValidationMessages.Count;
+    }
+
+    var cssValidationComplete = results != null && results.CssValidationCompleted;
+    results?.W3CCssValidationMessages?.RemoveAll(m => m.Level != W3CCssValidationMessage.MessageLevels.Error);
+    var hasCssValidationErrors = cssValidationComplete && results.W3CCssValidationMessages.Any();
+    var cssValidationErrorCount = 0;
+    if (hasCssValidationErrors)
+    {
+      cssValidationErrorCount = results.W3CCssValidationMessages.Count;
+    }
+}
+
+<div class="row full-height" style="overflow:auto">
+  <div class="col-md-4">
+    @*<div class="panel panel-success">
+      <div class="panel-heading">
+        <h4>
+          <span id="domCheckBadge" class="badge pull-right">
+            <i class="fa fa-check"></i>
+          </span>
+          Assignment Submitted: @ViewBag.SubmissionName
+        </h4>
+      </div>
+    </div>*@
+    <div id="domCheck" class="panel panel-@(!domTestComplete || hasDomErrors ? "danger" : "success")">
+      <div class="panel-heading">
+        <h4>
+          Assignment Error Check
+          <span id="domCheckBadge" class="badge pull-right">
+            @if (!domTestComplete)
+            {
+                <i class="fa fa-warning"></i>
+            }
+            else if (!hasDomErrors)
+            {
+                <i class="fa fa-check"></i>
+            }
+            else
+            {
+                <text>@domErrorCount</text>
+            }
+          </span>
+        </h4>
+      </div>
+      <div class="panel-body">
+        <ul id="domErrorsList" style="padding-left:10px;">
+          @if (!domTestComplete)
+          {
+              <li style="list-style-type:none;margin-left:-10px;">
+                Though the assignment was successfully submitted, we were
+                unable to run the assignment check. This may mean that the
+                assignment had no specific items to check or it may mean
+                that the process failed. You may recheck the assignment
+                by clicking the button above and to the right. If you keep
+                getting this message, then likely there is nothing to check
+                and all is well.
+              </li>
+          }
+          else if (!hasDomErrors)
+          {
+              <li style="list-style-type:none;margin-left:-10px;">
+                Congratulations! No errors found. Remember that this simply
+                means that the assignment passes a basic "sanity-check". It
+                does not mean that your assignment is 100% correct.
+              </li>
+          }
+          else
+          {
+            if (results.Exceptions != null && results.Exceptions.Count > 0)
+            {
+                  <li style="list-style-type:none;margin-left:-10px;">
+                    <h4><i class="fa fa-warning"></i> General Errors</h4>
+                  </li>
+            }
+            foreach (var exception in results.Exceptions)
+            {
+                  <li>@exception</li>
+            }
+            var filename = "";
+            foreach (var test in results.Failures)
+            {
+              if (test.Page != filename)
+              {
+                filename = test.Page;
+                      <li style="list-style-type:none;margin-left:-10px;">
+                        <h4><i class="fa fa-file-code-o"></i> @filename</h4>
+                      </li>
+              }
+                  <li>@test.Title</li>
+            }
+          }
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div id="htmlValidation" class="panel panel-@(!htmlValidationComplete || hasHtmlValidationErrors ? "danger" : "success")">
+      <div class="panel-heading">
+        <h4>
+          W3C HTML Validation
+          <span id="htmlValidationBadge" class="badge pull-right">
+            @if (!htmlValidationComplete)
+            {
+                <i class="fa fa-warning"></i>
+            }
+            else if (!hasHtmlValidationErrors)
+            {
+                <i class="fa fa-check"></i>
+            }
+            else
+            {
+                <text>@htmlValidationErrorCount</text>
+            }
+          </span>
+        </h4>
+      </div>
+      <div class="panel-body">
+        <ul id="htmlValidationList" style="padding-left:10px;">
+          @if (!htmlValidationComplete)
+          {
+              <li style="list-style-type:none;margin-left:-10px;">
+                Though your assignment was successfully submitted, we were
+                unable to run the W3C HTML Validation. You may recheck the
+                assignment by clicking the button above and to the right.
+              </li>
+          }
+          else if (!hasHtmlValidationErrors)
+          {
+              <li style="list-style-type:none;margin-left:-10px;">
+                Congratulations! No HTML Validation issues found.
+              </li>
+          }
+          else
+          {
+            var filename = "";
+            foreach (var message in results.W3CHtmlValidationMessages)
+            {
+              if (message.Page != filename)
+              {
+                filename = message.Page;
+                      <li style="list-style-type:none;margin-left:-10px;">
+                        <h4><i class="fa fa-file-code-o"></i> @filename</h4>
+                      </li>
+              }
+              var text = message.Extract;
+              if (!String.IsNullOrWhiteSpace(text))
+              {
+                var start = message.HiliteStart;
+                var len = message.HiliteLength;
+                var end = start + len;
+                text = text.Substring(0, start) + "(((HS)))" + text.Substring(start, len) + "(((HE)))" + text.Substring(end);
+                text = HttpUtility.HtmlEncode(text);
+                text = text.Replace("(((HS)))", "<span class=\"auger-hilite\">");
+                text = text.Replace("(((HE)))", "</span>");
+                      <li>
+                        line @message.LastLine: @message.Message
+                        <div class="auger-extract">@Html.Raw(text)</div>
+                      </li>
+              }
+              else
+              {
+                      <li>
+                        line @message.LastLine: @message.Message
+                      </li>
+              }
+            }
+          }
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div id="cssValidation" class="panel panel-@(!cssValidationComplete || hasCssValidationErrors ? "danger" : "success")">
+      <div class="panel-heading">
+        <h4>
+          W3C CSS Validation
+          <span id="cssValidationBadge" class="badge pull-right">
+            @if (!cssValidationComplete)
+          {
+                <i class="fa fa-warning"></i>
+            }
+            else if (!hasCssValidationErrors)
+            {
+                <i class="fa fa-check"></i>
+            }
+            else
+            {
+                <text>@cssValidationErrorCount</text>
+            }
+          </span>
+        </h4>
+      </div>
+      <div class="panel-body">
+        <ul id="cssValidationList" style="padding-left:10px;">
+          @if (!cssValidationComplete)
+          {
+              <li style="list-style-type:none;margin-left:-10px;">
+                Though your assignment was successfully submitted, we were
+                unable to run the W3C CSS Validation. You may recheck the
+                assignment by clicking the button above and to the right.
+              </li>
+          }
+          else if (!hasCssValidationErrors)
+          {
+              <li style="list-style-type:none;margin-left:-10px;">
+                Congratulations! No CSS Validation issues found.
+              </li>
+          }
+          else
+          {
+            var filename = "";
+            foreach (var message in results.W3CCssValidationMessages)
+            {
+              if (message.File != filename)
+              {
+                filename = message.File;
+                      <li style="list-style-type:none;margin-left:-10px;">
+                        <h4><i class="fa fa-file-code-o"></i> @filename</h4>
+                      </li>
+              }
+                  <li>
+                    line @message.Line: @message.Message
+                    @if (!string.IsNullOrWhiteSpace(message.Context))
+                  {
+                        <span class="auger-context">(in @message.Context selector)</span>
+                    }
+                  </li>
+
+            }
+          }
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+

@@ -1,0 +1,108 @@
+﻿@model ManageLoginsViewModel
+@using System.ServiceModel.Configuration
+@using Microsoft.AspNet.Identity.Owin
+@using Microsoft.Owin.Security
+@using Auger.DAL
+@{
+    ViewBag.Title = "Manage your external logins";
+}
+
+<ol class="breadcrumb">
+  <li><a href="~/">Auger Home</a>
+  <li><a href="~/Manage/">Account Settings</a>
+  <li>Manage External Logins
+</ol>
+
+<h2>@ViewBag.Title.</h2>
+
+<p class="text-success">@ViewBag.StatusMessage</p>
+@{
+var loginProviders = Context.GetOwinContext().Authentication.GetExternalAuthenticationTypes();
+if (Model.CurrentLogins.Count > 0)
+{
+  <h4>Registered Logins</h4>
+  <table class="table">
+    <tbody>
+      @foreach (var account in Model.CurrentLogins)
+      {
+        var hide = account.LoginProvider.StartsWith("LTI:") && !User.IsInRole(UserRoles.SuperUserRole);
+        if (!hide)
+        {
+          <tr>
+            <td>
+              <h4>@account.LoginProvider</h4>
+            </td>
+            <td>
+              @if (ViewBag.ShowRemoveButton)
+              {
+                using (Html.BeginForm("RemoveLogin", "Manage"))
+                {
+                  @Html.AntiForgeryToken()
+                  <div>
+                    @Html.Hidden("loginProvider", account.LoginProvider)
+                    @Html.Hidden("providerKey", account.ProviderKey)
+                    <button type="submit" class="btn btn-danger" value="Remove" title="Remove this @account.LoginProvider login from your account">
+                      <i class="fa fa-remove"></i> Remove
+                    </button>
+                  </div>
+                }
+              }
+              else
+              {
+                @: &nbsp;
+              }
+            </td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+}
+if (Model.OtherLogins.Count > 0)
+{
+  <h4>Possible External Logins</h4>
+  <p>
+    You may link this account with any of the following external login providers. Doing so will
+    make it easier to access your account without having to go through your course management system.
+  </p>
+  using (Html.BeginForm("LinkLogin", "Manage"))
+  {
+    @Html.AntiForgeryToken()
+    <div id="socialLoginList">
+    <p>
+        @foreach (AuthenticationDescription p in Model.OtherLogins)
+        {
+          var authType = p.AuthenticationType.ToLowerInvariant();
+          if (authType == "lti")
+          {
+          }
+          else if (authType == "facebook")
+          {
+                <button type="submit" class="btn btn-primary" id="@p.AuthenticationType" name="provider" value="@p.AuthenticationType" title="Link your Facebook account">
+                  <i class="fa fa-facebook-official"></i> Facebook
+                </button>
+          }
+          else if (authType == "google")
+          {
+                <button type="submit" class="btn btn-primary" id="@p.AuthenticationType" name="provider" value="@p.AuthenticationType" title="Link your Google account">
+                  <i class="fa fa-google"></i>&nbsp;Google Account
+                </button>
+          }
+          else if (authType == "microsoft")
+          {
+                <button type="submit" class="btn btn-primary" id="@p.AuthenticationType" name="provider" value="@p.AuthenticationType" title="Link your Microsoft account">
+                  <i class="fa fa-windows"></i>&nbsp;Microsoft Account
+                </button>
+          }
+          else if (authType == "twitter")
+          {
+                <button type="submit" class="btn btn-primary" id="@p.AuthenticationType" name="provider" value="@p.AuthenticationType" title="Link your Twitter account">
+                  <i class="fa fa-twitter"></i>&nbsp;Twitter
+                </button>
+          }
+        }
+    </p>
+    </div>
+  }
+}
+}

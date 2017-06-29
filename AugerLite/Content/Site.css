@@ -1,0 +1,296 @@
+﻿/* OVERRIDES */
+.fa {
+    display: inline; /* AVOIDS POTENTIALLY BREAKING SPACE BETWEEN ICON AND TEXT */
+}
+
+body {
+    padding-top: 50px;
+    padding-bottom: 20px;
+    background-image: url(home-bg.jpg);
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+body.home .body-content {
+    background-color: transparent;
+}
+
+body.home h1 {
+    font-size: 42pt;
+    padding-top: 30px;
+}
+
+body.home h3 {
+    padding-bottom: 30px;
+}
+
+body.home .body-content img {
+    padding: 50px 0;
+    max-width: 80%;
+}
+
+body.full {
+   overflow: hidden;
+}
+
+body.full .body-content {
+    width: 100%;
+}
+
+body.full footer {
+    display: none;
+}
+
+#fulldiv {
+}
+#folderdiv {
+    overflow: auto;
+}
+#editordiv {
+}
+
+/* Set padding to keep content from hitting the edges */
+.body-content {
+    background-color: #272b30;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+.breadcrumb-container {
+    background-color: #272b30;
+    margin-left: -15px;
+    margin-right: -15px;
+}
+
+.breadcrumb-container .container {
+    padding: 0;
+}
+
+.breadcrumb-container .breadcrumb {
+    margin-bottom: 0;
+}
+
+.dl-horizontal dd {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.panel .panel-heading {
+    padding: 1px 10px;
+}
+
+.panel.panel-list .panel-body,
+.panel.file-list .panel-body {
+    padding: 0;
+    max-height: 860px;
+    overflow-y: auto;
+    width: 100%;
+    font-size: 12pt;
+}
+
+.panel.panel-list .panel-body > p {
+    padding: 15px;
+}
+
+.panel.file-view .panel-body {
+    padding: 0;
+}
+
+.panel.file-list .panel-body {
+    font-size: 11pt;
+}
+
+.panel.panel-list .list-group-item,
+.panel.file-list .list-group-item {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.panel.file-list .list-group-item {
+    padding: 5px;
+}
+
+.panel.panel-list a.list-group-item,
+.panel.file-list a.list-group-item {
+    cursor: pointer;
+}
+
+.panel.course-list a.list-group-item {
+    text-align: center;
+    padding: 0;
+    border: 5px solid transparent;
+    background-clip: padding-box;
+}
+
+.panel.course-list a.list-group-item h5 {
+    font-size: 16pt;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    background-color: #666;
+    background-color: rgba(0,0,0,0.4);
+    margin: 0;
+    padding: 10px;
+}
+
+.panel.course-list a.list-group-item table {
+    width: 100%;
+    font-size: 11pt;
+    margin: 20px 0;
+}
+
+.panel.course-list a.list-group-item th {
+    text-align: right;
+    font-weight: bold;
+    width: 50%;
+    padding-right: 5px;
+}
+
+.panel.course-list a.list-group-item td {
+    text-align: left;
+    padding-left: 5px;
+}
+
+.text-left {
+    text-align: left !important;
+}
+
+table {
+    background-color: transparent;
+}
+
+/* Set width on the form input elements since they're 100% wide by default */
+input,
+select,
+textarea {
+    max-width: 280px;
+}
+
+.btn-list > div {
+    padding: 10px;
+    display: table;
+}
+
+.btn-list > div > a {
+    white-space:normal;
+    height:150px;
+    width:100%;
+    display:table-cell;
+    vertical-align:middle;
+}
+
+.nav-tabs {
+    margin-bottom: 0;
+}
+
+.nav-tabs li.active a,
+.nav-tabs li.active a:hover,
+.nav-tabs li.active a:focus {
+    background-color: #3e444c;
+}
+
+.nav-tabs li a:hover {
+    /*background-color: #337AB7;
+    color: #fff;*/
+}
+
+.tab-content {
+    background-color: #3e444c;
+    padding: 10px;
+}
+
+.auger-extract {
+  border: 1px solid black;
+  padding: 2px;
+  margin: 2px 0;
+  color: black;
+  background-color: #ee5f5b;
+  font-family: consolas, "courier new", courier, monospace;
+}
+.auger-hilite {
+  background-color: #ff0;
+  font-weight: bold;
+}
+
+
+.text-left-not-xs, .text-left-not-sm, .text-left-not-md, .text-left-not-lg {
+    text-align: left;
+}
+.text-center-not-xs, .text-center-not-sm, .text-center-not-md, .text-center-not-lg {
+    text-align: center;
+}
+.text-right-not-xs, .text-right-not-sm, .text-right-not-md, .text-right-not-lg {
+    text-align: right;
+}
+.text-justify-not-xs, .text-justify-not-sm, .text-justify-not-md, .text-justify-not-lg {
+    text-align: justify;
+}
+
+@media (max-width: 767px) {
+    .text-left-not-xs, .text-center-not-xs, .text-right-not-xs, .text-justify-not-xs {
+        text-align: inherit;
+    }
+    .text-left-xs {
+        text-align: left;
+    }
+    .text-center-xs {
+        text-align: center;
+    }
+    .text-right-xs {
+        text-align: right;
+    }
+    .text-justify-xs {
+        text-align: justify;
+    }
+}
+@media (min-width: 768px) and (max-width: 991px) {
+    .text-left-not-sm, .text-center-not-sm, .text-right-not-sm, .text-justify-not-sm {
+        text-align: inherit;
+    }
+    .text-left-sm {
+        text-align: left;
+    }
+    .text-center-sm {
+        text-align: center;
+    }
+    .text-right-sm {
+        text-align: right;
+    }
+    .text-justify-sm {
+        text-align: justify;
+    }
+}
+@media (min-width: 992px) and (max-width: 1199px) {
+    .text-left-not-md, .text-center-not-md, .text-right-not-md, .text-justify-not-md {
+        text-align: inherit;
+    }
+    .text-left-md {
+        text-align: left;
+    }
+    .text-center-md {
+        text-align: center;
+    }
+    .text-right-md {
+        text-align: right;
+    }
+    .text-justify-md {
+        text-align: justify;
+    }
+}
+@media (min-width: 1200px) {
+    .text-left-not-lg, .text-center-not-lg, .text-right-not-lg, .text-justify-not-lg {
+        text-align: inherit;
+    }
+    .text-left-lg {
+        text-align: left;
+    }
+    .text-center-lg {
+        text-align: center;
+    }
+    .text-right-lg {
+        text-align: right;
+    }
+    .text-justify-lg {
+        text-align: justify;
+    }
+}

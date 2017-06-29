@@ -1,0 +1,313 @@
+﻿@model Auger.Models.Data.Assignment
+
+@{
+    ViewBag.Title = "Manage Assignment";
+    bool hasContent = Model.Pages.Any() || Model.AllScripts.Any();
+}
+
+@section Breadcrumbs {
+  <li><a href="~/">Auger Home</a>
+  <li><a href="~/CourseAdmin">Manage Courses</a>
+  <li><a href="~/CourseAdmin/CourseDetails/@Model.CourseId">@Model.Course.CourseLabel</a>
+  <li>@Model.AssignmentName
+}
+
+<h2>@Model.AssignmentName</h2>
+
+<div class="row">
+  <div class="col-sm-4">
+    <div class="panel panel-primary">
+      <div class="panel-heading">
+        <h4 class="btn-group btn-group-xs pull-right" role="group">
+          <a class="btn btn-primary" href="~/CourseAdmin/AssignmentEdit/@Model.CourseId/@Model.AssignmentId">
+            <i class="fa fa-edit"></i>&nbsp;Edit
+          </a>
+          <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#copyAssignmentModal">
+            <i class="fa fa-copy"></i>&nbsp;Copy Assignment
+          </button>
+          <a class="btn btn-primary" href="~/CourseAdmin/AssignmentDelete/@Model.CourseId/@Model.AssignmentId">
+            <i class="fa fa-close"></i>&nbsp;Delete
+          </a>
+        </h4>
+        <h4>Assignment Details</h4>
+      </div>
+      <div class="panel-body">
+        <dl class="dl-horizontal">
+          <dt>
+            @Html.DisplayNameFor(model => model.AssignmentName)
+          </dt>
+          <dd>
+            @Html.DisplayFor(model => model.AssignmentName)
+          </dd>
+
+          <dt>
+            @Html.DisplayNameFor(model => model.DueDate)
+          </dt>
+          <dd>
+            @Html.DisplayFor(model => model.DueDate)
+          </dd>
+
+          <dt>
+            @Html.DisplayNameFor(model => model.LtiResourceLinkId)
+          </dt>
+          <dd>
+            @Html.DisplayFor(model => model.LtiResourceLinkId)
+          </dd>
+
+          <dt>
+            @Html.DisplayNameFor(model => model.DateCreated)
+          </dt>
+          <dd>
+            @Html.DisplayFor(model => model.DateCreated)
+          </dd>
+
+          <dt>
+            @Html.DisplayNameFor(model => model.DateModified)
+          </dt>
+          <dd>
+            @Html.DisplayFor(model => model.DateModified)
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="panel panel-primary panel-list">
+      <div class="panel-heading">
+        <h4 class="btn-group btn-group-xs pull-right">
+          <a class="btn btn-primary" href="~/CourseAdmin/PageCreate/@Model.CourseId/@Model.AssignmentId">
+            <i class="fa fa-plus"></i>&nbsp;Add
+          </a>
+        </h4>
+        <h4>Pages</h4>
+      </div>
+      <div class="panel-body">
+        @if (Model.Pages.Any())
+        {
+          foreach (var page in Model.Pages)
+          {
+            <a href="~/CourseAdmin/PageDetails/@page.Assignment.CourseId/@page.PageId" class="list-group-item">
+              <i class="fa fa-file-code-o"></i>&nbsp;@page.PageName
+            </a>
+          }
+        }
+        else
+        {
+          <p>No pages found</p>
+        }
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="panel panel-primary panel-list">
+      <div class="panel-heading">
+        <h4 class="btn-group btn-group-xs pull-right">
+          <a class="btn btn-primary" href="~/CourseAdmin/ScriptCreate/@Model.CourseId/@Model.AssignmentId">
+            <i class="fa fa-plus"></i>&nbsp;Add
+          </a>
+          <a class="btn btn-primary" href="~/CourseAdmin/ManageScripts/@Model.CourseId/@Model.AssignmentId">
+            <i class="fa fa-cog"></i>&nbsp;Manage
+          </a>
+        </h4>
+        <h4>Common Scripts</h4>
+      </div>
+      <div class="panel-body list-group">
+        @if (Model.CommonScripts.Any())
+        {
+          foreach (var script in Model.CommonScripts)
+          {
+            <a href="~/CourseAdmin/ManageScripts/@script.Assignment.CourseId/@Model.AssignmentId/@script.ScriptId" class="list-group-item">
+              <i class="fa fa-code"></i>&nbsp;@script.ScriptName
+            </a>
+          }
+        }
+        else
+        {
+          <p>No scripts found</p>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+@{ 
+    var studentsSubmitted = Model.StudentAssignments.Where(sa => sa.HasSubmission).OrderBy(sa => sa.Enrollment.UserName);
+    var studentsUnsubmitted = Model.StudentAssignments.Where(sa => !sa.HasSubmission).OrderBy(sa => sa.Enrollment.UserName);
+}
+<div class="row">
+  <div class="col-xs-6">
+    <div class="panel panel-primary panel-list">
+      <div class="panel-heading">
+        <h4>
+          Submitted Assignments
+          <span class="badge pull-right">@studentsSubmitted.Count()</span>
+        </h4>
+      </div>
+      <div class="panel-body">
+        @if (studentsSubmitted.Any())
+        {
+          foreach (var sa in studentsSubmitted)
+          {
+            var userClass = sa.Enrollment.IsInRole(UserRoles.InstructorRole) ? "fa-user-secret" : "fa-user";
+
+            <a href="~/CourseAdmin/StudentAssignmentDetails/@Model.CourseId/@sa.StudentAssignmentId" class="col-md-6 list-group-item">
+              <i class="fa @userClass"></i>&nbsp;@sa.Enrollment.UserName
+            </a>
+          }
+        }
+        else
+        {
+          <p>No submitted assignments found</p>
+        }
+      </div>
+    </div>
+  </div>
+  <div class="col-xs-6">
+    <div class="panel panel-primary panel-list">
+      <div class="panel-heading">
+        <h4>
+          Unsubmitted Assignments
+          <span class="badge pull-right">@studentsUnsubmitted.Count()</span>
+        </h4>
+      </div>
+      <div class="panel-body">
+        @if (studentsUnsubmitted.Any())
+        {
+          foreach (var sa in studentsUnsubmitted)
+          {
+            var userClass = sa.Enrollment.IsInRole(UserRoles.InstructorRole) ? "fa-user-secret" : "fa-user";
+            
+            <a href="~/CourseAdmin/EnrollmentDetails/@Model.CourseId/@sa.EnrollmentId" class="col-md-6 list-group-item">
+              <i class="fa @userClass"></i>&nbsp;@sa.Enrollment.UserName
+            </a>
+          }
+        }
+        else
+        {
+          <p>No unsubmitted assignments found</p>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="copyAssignmentModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="copyAssignmentLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="copyAssignmentLabel">Copy Assignment</h4>
+      </div>
+      <div class="modal-body text-center" id="modalBusy" style="padding:50px;display:none;">
+        <div class="fa fa-spin fa-spinner" style="font-size: 60pt;"></div>
+        <div style="font-size: 18pt; margin-top: 50px;">COPYING ASSIGNMENT<br>PLEASE WAIT</div>
+      </div>
+      <div class="modal-body" id="modalContent">
+        <p>To copy the pages and scripts from another assignment, select the source assignment below.</p>
+        @if (hasContent)
+        {
+            <div class="panel panel-warning">
+              <div class="panel-heading">WARNING</div>
+              <div class="panel-body">
+                This will replace any existing pages and scripts with the ones from the selected assignment.
+                Any existing student submissions will be preserved.
+              </div>
+            </div>
+        }
+        <div class="form-horizontal">
+          <div class="form-group">
+            <label for="sourceCourseId" class="control-label col-md-4">Source Course:</label>
+            <div class="col-md-8"><select id="sourceCourseId" class="form-control" style="max-width:100%"></select></div>
+          </div>
+          <div class="form-group">
+            <label for="sourceAssignmentId" class="control-label col-md-4">Source Assignment:</label>
+            <div class="col-md-8"><select id="sourceAssignmentId" class="form-control" style="max-width:100%"></select></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="copyAssignmentButton">Copy Assignment</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+  var assignmentName = '@Model.AssignmentName';
+  $('#sourceCourseId').change(function () {
+    $("#sourceAssignmentId").empty();
+    $.ajax({
+      url: '@Url.Action("GetAssignmentsForCourse")',
+      type: 'POST',
+      data: {
+        courseId: $(this).val()
+      },
+      dataType: 'json'
+    }).done(function (assignments) {
+      if (assignments && assignments.length > 0) {
+        var selectedAssignment = -1;
+        for (var i = 0; i < assignments.length; i++) {
+          $('#sourceAssignmentId').append(
+            new Option(assignments[i].AssignmentName, assignments[i].AssignmentId)
+          );
+          if (assignments[i].AssignmentName == assignmentName) {
+            selectedAssignment = assignments[i].AssignmentId;
+          }
+        }
+        selectedAssignment = selectedAssignment == -1 ? $("#sourceAssignmentId option:first").val() : selectedAssignment;
+        $("#sourceAssignmentId").val(selectedAssignment);
+        $("#sourceAssignmentId").change();
+      }
+    });
+  })
+
+  $(function() {
+    $.ajax({
+      url: '@Url.Action("GetAllCourses")',
+      type: 'POST',
+      dataType: 'json'
+    }).done(function (courses) {
+      if (courses && courses.length > 0) {
+        for (var i = 0; i < courses.length; i++) {
+          $('#sourceCourseId').append(
+            new Option(courses[i].FullName, courses[i].CourseId)
+          );
+        }
+        $("#sourceCourseId").change();
+      }
+    });
+  });
+
+  var hasContent = @hasContent.ToString().ToLowerInvariant();
+  $('#copyAssignmentButton').click(function () {
+    $('#modalContent').hide();
+    $('#modalBusy').show();
+    $('#copyAssignmentModal .btn').hide();
+    $.ajax({
+      url: '@Url.Action("AssignmentImport")',
+      data: {
+        courseId: @Model.CourseId,
+        assignmentId: @Model.AssignmentId,
+        sourceAssignmentId: $('#sourceAssignmentId').val()
+      },
+      type: 'POST',
+      dataType: 'json'
+    }).done(function (data) {
+      if (data === true) {
+        location.reload();
+      } else {
+        alert(data);
+        $('#modalBusy').hide();
+        $('#modalContent').show();
+        $('#copyAssignmentModal .btn').show();
+      }
+    }).fail(function (xhr, textStatus, errorThrown) {
+      alert(errorThrown);
+      $('#modalBusy').hide();
+      $('#modalContent').show();
+      $('#copyAssignmentModal .btn').show();
+    });
+  });
+</script>
+}

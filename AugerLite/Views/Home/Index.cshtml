@@ -1,0 +1,32 @@
+﻿@using Auger.Models;
+@{
+    ViewBag.Title = "Home Page";
+    ViewBag.BodyClass = "home";
+}
+
+@section scripts {
+}
+
+<div class="text-center">
+  <h1>Welcome to Auger</h1>
+  <img src="~/Content/auger-large.png" alt="auger logo" />
+  <h3>
+    AIST 2220 / MINF 3618<br />
+    Introduction to Web Design
+  </h3>
+  @if (!Request.IsAuthenticated)
+  {
+    <p>
+      Please <a href="~/account/login">log in using a linked account</a> or
+      <a href="http://canvas.instructure.com" target="_blank">log in to Instructure Canvas</a>
+      and select an assignment to proceed.
+    </p>
+  }
+  else
+  {
+    <p>
+      Proceed to the <a href="~/assignment/">Assignments page</a> to submit (or resubmit) your assignments.
+      You will receive graded feedback via <a href="http://canvas.instructure.com" target="_blank">Instructure Canvas</a>.
+    </p>
+  }
+</div>

@@ -1,0 +1,87 @@
+﻿@model Auger.Models.Data.Page
+
+@{
+    ViewBag.Title = "Manage Page";
+}
+
+@section Breadcrumbs {
+<li><a href="~/">Auger Home</a>
+<li><a href="~/CourseAdmin">Manage Courses</a>
+<li><a href="~/CourseAdmin/CourseDetails/@Model.Assignment.CourseId">@Model.Assignment.Course.CourseLabel</a>
+<li><a href="~/CourseAdmin/AssignmentDetails/@Model.Assignment.CourseId/@Model.AssignmentId">@Model.Assignment.AssignmentName</a>
+<li>@Model.PageName
+}
+
+<h2>@Model.PageName</h2>
+
+<div class="row">
+  <div class="col-sm-4">
+    <div class="panel panel-primary">
+      <div class="panel-heading" style="padding:1px 10px">
+        <h4 class="btn-group btn-group-xs pull-right" role="group">
+          <a class="btn btn-primary" href="~/CourseAdmin/PageEdit/@Model.Assignment.CourseId/@Model.PageId">
+            <i class="fa fa-edit"></i>&nbsp;Edit
+          </a>
+          <a class="btn btn-primary" href="~/CourseAdmin/PageDelete/@Model.Assignment.CourseId/@Model.PageId">
+            <i class="fa fa-close"></i>&nbsp;Delete
+          </a>
+        </h4>
+        <h4>Page Details</h4>
+      </div>
+      <div class="panel-body">
+        <dl class="dl-horizontal">
+          <dt>
+            @Html.DisplayNameFor(model => model.PageName)
+          </dt>
+          <dd>
+            @Html.DisplayFor(model => model.PageName)
+          </dd>
+
+          <dt>
+            @Html.DisplayNameFor(model => model.DateCreated)
+          </dt>
+          <dd>
+            @Html.DisplayFor(model => model.DateCreated)
+          </dd>
+
+          <dt>
+            @Html.DisplayNameFor(model => model.DateModified)
+          </dt>
+          <dd>
+            @Html.DisplayFor(model => model.DateModified)
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="panel panel-primary panel-list">
+      <div class="panel-heading">
+        <h4 class="btn-group btn-group-xs pull-right">
+          <a class="btn btn-primary" href="~/CourseAdmin/ScriptCreate/@Model.Assignment.CourseId/@Model.AssignmentId/@Model.PageId">
+            <i class="fa fa-plus"></i>&nbsp;Add
+          </a>
+          <a class="btn btn-primary" href="~/CourseAdmin/ManageScripts/@Model.Assignment.CourseId/@Model.AssignmentId">
+            <i class="fa fa-cog"></i>&nbsp;Manage
+          </a>
+        </h4>
+        <h4>Scripts</h4>
+      </div>
+      <div class="panel-body">
+        @if (Model.AllScripts.Any())
+        {
+          foreach (var script in Model.AllScripts)
+          {
+            <a href="~/CourseAdmin/ManageScripts/@Model.Assignment.CourseId/@Model.AssignmentId/@script.ScriptId" class="list-group-item">
+              <i class="fa fa-code" style="margin-right:10px"></i>@script.ScriptName
+            </a>
+          }
+        }
+        else
+        {
+            <p>No scripts found</p>
+        }
+      </div>
+    </div>
+  </div>
+</div>

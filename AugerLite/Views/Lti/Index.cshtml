@@ -1,0 +1,14 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Index</h2>
+
+<dl class="dl-horizontal">
+  @foreach (var claim in ((System.Security.Claims.ClaimsIdentity)User.Identity).Claims)
+  {
+      <dt>@claim.Type</dt>
+      <dd>@claim.Value</dd>
+  }
+</dl>

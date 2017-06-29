@@ -1,0 +1,483 @@
+﻿@model Assignment
+@{
+  ViewBag.Title = "Manage Scripts";
+  ViewBag.BodyClass = "full";
+}
+
+@section Head {
+  <script src="~/Scripts/ace/ace.js"></script>
+  <script src="~/Scripts/ace/ext-language_tools.js"></script>
+  <script src="~/Scripts/ace/ext-settings_menu.js"></script>
+  <script>
+    var allFiles = [];
+    var activeFile = null;
+    var _augerFile = function (fileId,fileName) {
+      this.fileId = fileId;
+      this.fileName = fileName;
+      this.fileType = "javascript";
+      this.isLoaded = false;
+      this.aceSession = null;
+      this.lastSaveText = null;
+      this.isDirty = function () {
+        if (this.isLoaded) {
+          if (this.lastSaveText != this.aceSession.getValue()) {
+            return true;
+          }
+        }
+        return false;
+      }
+    }
+  </script>
+
+  <style>
+    /*
+    .ace_scroller {
+      font-weight: bold;
+    }
+    .ace_gutter {
+      color: #888 !important;
+    }
+    */
+    .ace_marker-layer .ace_bracket {
+      background-color:seagreen !important;
+      margin: 0 0 0 -2px !important;
+      padding: 0 4px !important;
+    }
+
+    .panel-heading {
+      padding: 1px 5px !important;
+    }
+    .panel-heading h4 {
+      margin: 5px 0;
+    }
+    .panel-heading .btn-group {
+      margin-top: 4px;
+    }
+
+    .dropdown-menu {
+      border-color: #62686D;
+      background-color: #62686D;
+    }
+    .dropdown-menu a {
+      cursor: pointer;
+    }
+
+    .dropdown-menu {
+      min-width: 0;
+    }
+
+    #folder-div a:before, #folder-div a:after {
+      font-family: FontAwesome;
+      display: inline-block;
+      margin-left: 0.2em;
+      margin-right: 0.2em;
+    }
+    #folder-div a:after {
+      float: right;
+      font-size: 80%;
+      margin-top: 0.2em;
+      padding-left: 0.3em;
+      padding-right: 0.3em;
+      background-color: #c67605;
+      border-radius: 0.5em;
+    }
+    #folder-div .folder:before {
+      content: "\f147  \f115 ";
+    }
+    #folder-div .folder.collapsed:before {
+      content: "\f196  \f114 ";
+    }
+    #folder-div .file-link:before {
+      margin-left: 1.3em;
+      content: "\f15b";
+    }
+    #folder-div .file-link.pregrade:before {
+      content: "\f016";
+    }
+    #folder-div .dirty:after {
+      content: "\f0c7";
+    }
+    #folder-div .warn:after {
+      content: "\f071";
+    }
+    #folder-div .dirty.warn:after {
+      content: "\f0c7  \f071";
+    }
+  </style>
+}
+
+@section Breadcrumbs {
+  <li><a href="~/">Auger Home</a>
+  <li><a href="~/CourseAdmin">Manage Courses</a>
+  <li><a href="~/CourseAdmin/CourseDetails/@Model.CourseId">@Model.Course.CourseLabel</a>
+  <li><a href="~/CourseAdmin/AssignmentDetails/@Model.CourseId/@Model.AssignmentId">@Model.AssignmentName</a>
+  <li>@ViewBag.Title
+}
+
+<div class="row full-height hidden-xs">
+  <div id="augeride">
+    <div id="left-pane" class="col-lg-2 col-md-3 col-sm-4" style="padding:0;padding-right:5px;">
+      <div class="panel panel-info file-list full-height" style="border-radius: unset;border-left:unset;">
+        <div class="panel-heading" style="border-radius: unset;">
+          <div class="btn-group pull-right">
+            <button type="button" class="btn btn-xs btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <i class="fa fa-plus"></i> Add <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+              <li><a id="menu-add-script"><i class="fa fa-file"></i> Script</a>
+            </ul>
+          </div>
+          <h4>Scripts</h4>
+        </div>
+        <div id="folder-div" class="panel-body list-group">
+          @ShowFolder("Common Scripts", Model.CommonScripts, ViewBag.SelectedScriptId)
+          @foreach (var page in Model.Pages)
+          {
+              @ShowFolder(page.PageName, page.AllScripts, ViewBag.SelectedScriptId)
+          }
+        </div>
+      </div>
+    </div>
+
+    <div id="right-pane" class="col-lg-10 col-md-9 col-sm-8" style="padding:0;">
+      <div class="panel panel-info file-view" style="border-radius: unset;border-right:unset;">
+        <div class="panel-heading" style="border-radius: unset;">
+          <div class="btn-group btn-group-xs pull-right">
+          </div>
+          <h4>
+            Selected Script: <span id="script-name">N/A</span>
+          </h4>
+        </div>
+        @if (Model.AllScripts.Any())
+        {
+          <div class="panel-body">
+            <div id="toolbar" class="btn-toolbar" style="padding: 5px;">
+              <div class="btn-group btn-group-sm">
+                <button id="menu-save" type="button" class="btn btn-primary"><i class="fa fa-save"></i> Save</button>
+                <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <span class="caret"></span>
+                  <span class="sr-only">Toggle Dropdown</span>
+                </button>
+                <ul class="dropdown-menu">
+                  <li><a id="menu-save-2"><i class="fa fa-file"></i> This File</a>
+                  <li><a id="menu-save-all"><i class="fa fa-folder"></i> All Files</a>
+                </ul>
+              </div>
+              <div class="btn-group btn-group-sm">
+                <button id="menu-indent" class="btn btn-primary" type="button"><i class="fa fa-indent"></i> Indent</button>
+                <button id="menu-outdent" class="btn btn-primary" type="button"><i class="fa fa-outdent"></i> Outdent</button>
+                <button id="menu-format" class="btn btn-primary" type="button"><i class="fa fa-magic"></i> Autoformat</button>
+              </div>
+              <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  More <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu">
+                  <li><a>Action</a>
+                  <li><a>Another action</a>
+                  <li><a>Something else here</a>
+                  <li role="separator" class="divider"></li>
+                  <li><a id="menu-properties"><i class="fa fa-edit"></i> Properties</a>
+                  <li role="separator" class="divider"></li>
+                  <li><a id="menu-delete"><i class="fa fa-close"></i> Delete</a>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="panel-body panel-info" style="border-top-width:1px;border-top-style:solid;">
+            <div id="editor-div" class="full-height">
+              <div id="editor" style="height:100%;width:100%;"></div>
+            </div>
+          </div>
+        }
+        else
+        {
+          <div class="panel-body full-height"></div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+@*
+<script src="~/Scripts/monaco-editor/min/vs/loader.js"></script>
+<script>
+  var editor;
+
+  require.config({
+    paths: { 'vs': '@Url.Content("~/Scripts/monaco-editor/min/vs")' }
+  });
+  require(['vs/editor/editor.main'], function() {
+    editor = monaco.editor.create(document.getElementById('editor'), {
+      value: 'UNABLE TO LOAD SCRIPT SOURCE',
+      language: 'javascript',
+      theme: 'vs-dark',
+      fontSize: 18,
+      folding: true,
+      readOnly: true,
+      formatOnType: true
+    });
+    editor.addAction({
+      id: 'save-action',
+      label: 'Save',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S],
+      keybindingContext: null,
+
+      // Control if the action should show up in the context menu and where.
+      // Built-in groups:
+      //   1_goto/* => e.g. 1_goto/1_peekDefinition
+      //   2_change/* => e.g. 2_change/2_format
+      //   3_edit/* => e.g. 3_edit/1_copy
+      //   4_tools/* => e.g. 4_tools/1_commands
+      // You can also create your own group.
+      // Defaults to null (don't show in context menu).
+      //contextMenuGroupId: '2_change/2_bla',
+      run: function (ed) {
+        console.log("SAVE presssed");
+      },
+      enablement: {
+        writeableEditor: true,
+      }
+    });
+    //editor.onKeyDown(function (e) {
+    //  if (e.ctrlKey && e.keyCode === monaco.KeyCode.KEY_S) {
+    //    e.preventDefault();
+    //  }
+    //});
+    //editor.onKeyUp(function (e) {
+    //  if (e.ctrlKey && e.keyCode === monaco.KeyCode.KEY_S) {
+    //    e.preventDefault();
+    //  }
+    //});
+  });
+</script>
+*@
+<script>
+
+  var baseSourceHref = '@Url.Action("ScriptSource", new { courseId = Model.CourseId })/';
+
+  ace.require("ace/ext/language_tools");
+  var editor = ace.edit("editor");
+  ace.require('ace/ext/settings_menu').init(editor);
+
+  editor.setTheme("ace/theme/vibrant_ink");
+  //editor.setTheme("ace/theme/terminal");
+  //editor.setTheme("ace/theme/tomorrow_night_bright");
+  editor.setFontSize(14);
+  editor.setReadOnly(true);
+  editor.setHighlightActiveLine(true);
+  editor.setBehavioursEnabled(true);
+  editor.setShowFoldWidgets(false);
+  editor.setOptions({
+    enableBasicAutocompletion: true,
+    enableSnippets: false,
+    enableLiveAutocompletion: true
+  });
+
+  editor.commands.addCommands([{
+    name: "showSettingsMenu",
+    bindKey: {win: "Ctrl-q", mac: "Command-q"},
+    exec: function(editor) {
+      editor.showSettingsMenu();
+    },
+    readOnly: true
+  }]);
+  
+  editor.commands.addCommand({
+    name: 'save',
+    bindKey: { win: 'Ctrl-S', mac: 'Command-S' },
+    exec: function (editor) {
+      _augerSaveFile(activeFile, function (err) {
+        if (!!err && err.length > 0) {
+          alert(err);
+        }
+      });
+    },
+    readOnly: false // false if this command should not apply in readOnly mode
+  });
+
+  var _augerResize = function () {
+    $('.full-height').each(function () {
+      $(this).height($(window).innerHeight() - this.getBoundingClientRect().top);
+    });
+    if (!!editor) { editor.resize(); }
+  };
+  $(window).resize(_augerResize);
+
+  var _augerConfirmLeave = function (e) {
+    var dirty = false;
+    for (var fileId in allFiles) {
+      var file = allFiles[fileId];
+      dirty = dirty || file.isDirty();
+    }
+    if (dirty) {
+      var message = 'There are unsaved files.';
+      e = e || window.event;
+      if (e) { e.returnValue = message; }
+      return message;
+    } else {
+      return;
+    }
+  };
+  window.onbeforeunload = function (e) { return _augerConfirmLeave(e); };
+
+  var _augerLoadFile = function (file,callback) {
+    var href = baseSourceHref + file.fileId;
+    $.get({ url: href, dataType: 'text' })
+      .done(function (data) {
+        var session = ace.createEditSession(data, "ace/mode/javascript");
+        session.on("changeAnnotation", function () { _augerChangeAnnotations(file); });
+        session.on("change", function () { _augerUpdateDirty(file); });
+        session.setTabSize(2);
+        session.setUseSoftTabs(true);
+        file.aceSession = session;
+        file.isLoaded = true;
+        file.lastSaveText = data;
+        callback();
+      })
+      .fail(function (jqXHR, textStatus, errorThrown) {
+        callback('UNABLE TO LOAD SCRIPT SOURCE\n' + errorThrown);
+      });
+  };
+
+  var _augerSaveFile = function (file,callback) {
+    if (!file.isDirty()) {
+      callback();
+      return;
+    }
+    var href = baseSourceHref + file.fileId;
+    $.post(href, { source: file.aceSession.getValue() })
+      .done(function (data) {
+        file.lastSaveText = file.aceSession.getValue();
+        _augerUpdateDirty(file);
+        callback();
+      })
+      .fail(function (jqXHR, textStatus, errorThrown) {
+        callback(errorThrown);
+      });
+  };
+
+  var _augerChangeAnnotations = function (file) {
+    var annot = file.aceSession.getAnnotations();
+    for (var i = 0; i < annot.length; i++) {
+      // column, raw, row, text, type ('info','error')
+      var a = annot[i];
+      console.log(annot[i].type + " -- [" + a.row + "," + a.column + "] " + a.text);
+    }
+    var $button = $('a[data-fileid=' + file.fileId + ']');
+    if (annot.length > 0) {
+      $button.addClass('warn');
+    } else {
+      $button.removeClass('warn');
+    }
+  };
+
+  var _augerUpdateDirty = function (file) {
+    var $button = $('a[data-fileid=' + file.fileId + ']');
+    if (file.isDirty()) {
+      $button.addClass('dirty');
+    } else {
+      $button.removeClass('dirty');
+    }
+  };
+
+  $(function () {
+    _augerResize();
+
+    function showFile(file,$button) {
+      activeFile = file;
+      editor.setReadOnly(false);
+      editor.setSession(file.aceSession);
+      editor.focus();
+      $('#script-name').text(file.fileName);
+      $button.addClass('list-group-item-success');
+      $('#toolbar button').prop('disabled', false);
+    }
+
+    function showMessage(text) {
+      activeFile = null;
+      editor.setReadOnly(true);
+      editor.setSession(ace.createEditSession(text,"ace/mode/text"));
+      $('#script-name').text('N/A');
+      $('#toolbar button').prop('disabled', true);
+    }
+
+    $('.file-link').click(function () {
+      var $button = $(this);
+      var file = allFiles[$button.data('fileid')];
+      $('.file-link').removeClass('list-group-item-success');
+      if (file.isLoaded) {
+        showFile(file,$button);
+      } else {
+        showMessage("LOADING...");
+        _augerLoadFile(file, function (errMsg) {
+          if (file.isLoaded) {
+            showFile(file,$button);
+          } else {
+            showMessage(errMsg);
+          }
+        });
+      }
+      return false;
+    });
+
+    $('#menu-add-script').click(function () {
+      window.location.href = '@Url.Content("~/CourseAdmin/ScriptCreate/" + Model.CourseId + "/" + Model.AssignmentId)';
+    });
+
+    $('#menu-save,#menu-save-2').click(function () {
+      _augerSaveFile(activeFile, function (err) {
+        if (!!err && err.length > 0) {
+          alert(err);
+        }
+      });
+    });
+
+    $('#menu-save-all').click(function () {
+    });
+
+    $('#menu-indent').click(function () {
+    });
+
+    $('#menu-outdent').click(function () {
+    });
+
+    $('#menu-format').click(function () {
+    });
+
+    $('#menu-properties').click(function () {
+      window.location.href = '@Url.Content("~/CourseAdmin/ScriptEdit/" + Model.CourseId)/' + activeFile.fileId;
+    });
+
+    $('#menu-delete').click(function () {
+      window.location.href = '@Url.Content("~/CourseAdmin/ScriptDelete/" + Model.CourseId)/' + activeFile.fileId;
+    });
+
+    $('#toolbar button').each(function (i,e) { e.disabled = true; });
+    $('#default-script').click();
+  });
+
+</script>
+}
+
+@helper ShowFolder(string folderName, IEnumerable<Script> scripts, int? selectedScriptId)
+{
+  var id = Guid.NewGuid().ToString();
+
+  <a class="list-group-item folder" data-toggle="collapse" data-target="#@id">
+    @folderName
+  </a>
+  <div class="collapse in" id="@id">
+    @foreach (var script in scripts)
+    {
+      var buttonId = script.ScriptId == selectedScriptId ? "default-script" : "";
+      var scriptClass = script.IsPreGrade ? "pregrade" : "";
+
+      <script>allFiles[@script.ScriptId] = new _augerFile(@script.ScriptId,'@script.ScriptName');</script>
+      <a data-fileid="@script.ScriptId" id="@buttonId" class="list-group-item file-link @scriptClass">
+        @script.ScriptName
+      </a>
+    }
+  </div>
+}

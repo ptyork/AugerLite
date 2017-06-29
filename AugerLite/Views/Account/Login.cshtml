@@ -1,0 +1,122 @@
+﻿@model LoginViewModel
+@using Microsoft.Owin.Security
+@{
+    ViewBag.Title = "Log in";
+}
+
+<ol class="breadcrumb">
+  <li><a href="~/">Auger Home</a>
+  <li>Log in
+</ol>
+
+<h2>@ViewBag.Title</h2>
+@if (!String.IsNullOrWhiteSpace(ViewBag.LoginError))
+{
+    <div class="error">
+      <i class="fa fa-exclamation-circle"></i>
+      @ViewBag.LoginError
+    </div>
+}
+<div class="row">
+    <div class="col-md-6 hidden" id="logindiv">
+        <section id="loginForm">
+            @using (Html.BeginForm("Login", "Account", new { ReturnUrl = ViewBag.ReturnUrl }, FormMethod.Post, new { @class = "form-horizontal", role = "form" }))
+            {
+                @Html.AntiForgeryToken()
+                <h4>Use a local account to log in.</h4>
+                <hr />
+                @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                <div class="form-group">
+                    @Html.LabelFor(m => m.Email, new { @class = "col-md-2 control-label" })
+                    <div class="col-md-10">
+                        @Html.TextBoxFor(m => m.Email, new { @class = "form-control" })
+                        @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+                <div class="form-group">
+                    @Html.LabelFor(m => m.Password, new { @class = "col-md-2 control-label" })
+                    <div class="col-md-10">
+                        @Html.PasswordFor(m => m.Password, new { @class = "form-control" })
+                        @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-offset-2 col-md-10">
+                        <div class="checkbox">
+                            @Html.CheckBoxFor(m => m.RememberMe)
+                            @Html.LabelFor(m => m.RememberMe)
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-offset-2 col-md-10">
+                        <input type="submit" value="Log in" class="btn btn-default" />
+                    </div>
+                </div>
+            }
+        </section>
+    </div>
+    <div class="col-md-6">
+      <section id="socialLoginForm">
+        <h4>Use another service to <span id="special">log in</span>.</h4>
+        <p>
+          If you have linked your Auger account with an external service, you may click one
+          of the buttons below to use this service to log in. Otherwise, you must access Auger
+          via your Course Management System.
+        </p>
+        <hr />
+        @{
+            var loginProviders = Context.GetOwinContext().Authentication.GetExternalAuthenticationTypes();
+            using (Html.BeginForm("ExternalLogin", "Account", new { ReturnUrl = ViewBag.ReturnUrl }))
+            {
+              @Html.AntiForgeryToken()
+              <div id="socialLoginList">
+                <p>
+                  @foreach (AuthenticationDescription p in loginProviders)
+                  {
+                    var authType = p.AuthenticationType.ToLowerInvariant();
+                    if (authType == "lti")
+                    {
+                    }
+                    else if (authType == "facebook")
+                    {
+                          <button type="submit" class="btn btn-primary" id="@p.AuthenticationType" name="provider" value="@p.AuthenticationType" title="Log in using your Facebook account">
+                            <i class="fa fa-facebook"></i>&nbsp;Facebook
+                          </button>
+                    }
+                    else if (authType == "google")
+                    {
+                          <button type="submit" class="btn btn-primary" id="@p.AuthenticationType" name="provider" value="@p.AuthenticationType" title="Log in using your Google account">
+                            <i class="fa fa-google"></i>&nbsp;Google Account
+                          </button>
+                    }
+                    else if (authType == "microsoft")
+                    {
+                          <button type="submit" class="btn btn-primary" id="@p.AuthenticationType" name="provider" value="@p.AuthenticationType" title="Log in using your Microsoft account">
+                            <i class="fa fa-windows"></i>&nbsp;Microsoft Account
+                          </button>
+                    }
+                    else if (authType == "twitter")
+                    {
+                          <button type="submit" class="btn btn-primary" id="@p.AuthenticationType" name="provider" value="@p.AuthenticationType" title="Log in using your Twitter account">
+                            <i class="fa fa-twitter"></i>&nbsp;Twitter
+                          </button>
+                    }
+                  }
+                </p>
+              </div>
+            }
+        }
+      </section>
+    </div>
+</div>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+
+  <script>
+    $('#special').dblclick(function () {
+      $('#logindiv').removeClass('hidden');
+    });
+  </script>
+}

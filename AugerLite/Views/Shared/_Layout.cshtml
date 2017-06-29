@@ -1,0 +1,68 @@
+﻿@using System.Security.Claims;
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auger - @ViewBag.Title</title>
+  <link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+  <link id="main-style" rel="stylesheet" href="~/Content/bootstrap-dark.min.css" />
+  <link rel="stylesheet" href="~/Content/font-awesome.min.css" />
+  <link rel="stylesheet" href="~/Content/Site.css" />
+  @Scripts.Render("~/bundles/modernizr")
+  @RenderSection("head", required: false)
+</head>
+<body class="@ViewBag.BodyClass">
+  <div class="container-fluid">
+    <div class="navbar navbar-default navbar-fixed-top">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a href="~/" class="navbar-brand" style="margin-top: -10px"><img src="~/Content/auger-logo.png" style="height:42px" /></a>
+      </div>
+      <div class="navbar-collapse collapse">
+        <ul class="nav navbar-nav">
+          <li>@Html.ActionLink("Home", "Index", "Home")</li>
+          @if (Request.IsAuthenticated)
+          {
+            <li>@Html.ActionLink("Assignments", "Index", "Assignment")</li>
+
+            if (((ClaimsIdentity)User.Identity).HasClaim(c => c.Type == ApplicationUser.SystemRoleClaim && c.Value != UserRoles.LearnerRole))
+            {
+              <li>@Html.ActionLink("Administration", "Index", "CourseAdmin")</li>
+            }
+          }
+          @*<li><a href="http://canvas.instructure.com" target="_blank">Instructure Canvas</a></li>*@
+        </ul>
+        @Html.Partial("_LoginPartial")
+      </div>
+    </div>
+  </div>
+
+  @if (IsSectionDefined("Breadcrumbs"))
+  {
+      <div class="container-fluid">
+        <div class="breadcrumb-container" style="padding-top:5px">
+          <ol class="breadcrumb">
+            @RenderSection("Breadcrumbs", required: false)
+          </ol>
+        </div>
+      </div>
+  }
+  <div class="container-fluid body-content">
+    @RenderBody()
+  </div>
+  <div class="container-fluid">
+    <footer class="text-center">
+      <p>&copy; @DateTime.Now.Year - Augusta University</p>
+    </footer>
+  </div>
+
+  @Scripts.Render("~/bundles/jquery")
+  @Scripts.Render("~/bundles/bootstrap")
+  @RenderSection("scripts", required: false)
+</body>
+</html>

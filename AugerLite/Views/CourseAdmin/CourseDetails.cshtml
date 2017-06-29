@@ -1,0 +1,155 @@
+﻿@model Auger.Models.Data.Course
+
+@{
+    ViewBag.Title = "Manage Course";
+}
+
+@section Breadcrumbs {
+  <li><a href="~/">Auger Home</a>
+  <li><a href="~/CourseAdmin">Manage Courses</a>
+  <li>@Model.CourseLabel
+}
+
+<h2>@Model.CourseTitle</h2>
+
+<div class="row">
+  <div class="col-sm-4">
+    <div class="panel panel-primary">
+      <div class="panel-heading">
+        <h4 class="btn-group btn-group-xs pull-right">
+          <a class="btn btn-xs btn-primary pull-right" href="~/CourseAdmin/CourseEdit/@Model.CourseId">
+            <i class="fa fa-edit"></i>&nbsp;Edit
+          </a>
+        </h4>
+        <h4>Course Details</h4>
+      </div>
+      <div class="panel-body">
+        <dl class="dl-horizontal">
+          <dt>
+            @Html.DisplayNameFor(model => model.CourseTitle)
+          </dt>
+          <dd>
+            @Html.DisplayFor(model => model.CourseTitle)
+          </dd>
+
+          <dt>
+            @Html.DisplayNameFor(model => model.CourseLabel)
+          </dt>
+          <dd>
+            @Html.DisplayFor(model => model.CourseLabel)
+          </dd>
+
+          <dt>
+            @Html.DisplayNameFor(model => model.LtiContextId)
+          </dt>
+          <dd>
+            @Html.DisplayFor(model => model.LtiContextId)
+          </dd>
+
+          <dt>
+            @Html.DisplayNameFor(model => model.IsActive)
+          </dt>
+          <dd>
+            @Html.DisplayFor(model => model.IsActive)
+          </dd>
+
+          <dt>
+            @Html.DisplayNameFor(model => model.DateCreated)
+          </dt>
+          <dd>
+            @Html.DisplayFor(model => model.DateCreated)
+          </dd>
+
+          <dt>
+            @Html.DisplayNameFor(model => model.DateModified)
+          </dt>
+          <dd>
+            @Html.DisplayFor(model => model.DateModified)
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="panel panel-primary panel-list">
+      <div class="panel-heading">
+        <h4 class="btn-group btn-group-xs pull-right">
+          <a class="btn btn-xs btn-primary pull-right" href="~/CourseAdmin/AssignmentCreate/@Model.CourseId">
+            <i class="fa fa-plus"></i>&nbsp;Add
+          </a>
+        </h4>
+        <h4>Assignments</h4>
+      </div>
+      <div class="panel-body">
+        @if (Model.Assignments.Any())
+        {
+          foreach (var assignment in Model.Assignments.OrderBy(a => a.DueDate))
+          {
+            var due = assignment.DueDate.HasValue ? assignment.DueDate.Value.ToString() : "Not Specified";
+
+            <a href="~/CourseAdmin/AssignmentDetails/@assignment.CourseId/@assignment.AssignmentId" class="list-group-item">
+              <i class="fa fa-folder-open"></i>&nbsp;@assignment.AssignmentName
+              <div class="pull-right small">
+                <i><b>Due:</b>&nbsp;@due</i>
+              </div>
+            </a>
+          }
+        }
+        else
+        {
+          <p>No assignments found</p>
+        }
+      </div>
+    </div>
+  </div>
+  @{ 
+      var active = Model.Enrollments.Where(e => e.IsActive);
+      var inactive = Model.Enrollments.Where(e => !e.IsActive);
+  }
+  <div class="col-sm-4">
+    <div class="panel panel-primary panel-list">
+      <div class="panel-heading">
+        <h4>
+          Active Enrollments
+          <span class="badge pull-right">@active.Count()</span>
+        </h4>
+      </div>
+      <div class="panel-body">
+        @if (active.Any())
+        {
+          foreach (var enrollment in active)
+          {
+            var userClass = enrollment.IsInRole(UserRoles.InstructorRole) ? "fa-user-secret" : "fa-user";
+
+            <a href="~/CourseAdmin/EnrollmentDetails/@enrollment.CourseId/@enrollment.EnrollmentId" class="list-group-item">
+              <i class="fa @userClass"></i>&nbsp;@enrollment.UserName
+            </a>
+          }
+        }
+        else
+        {
+            <p>No enrollments found</p>
+        }
+      </div>
+    </div>
+    @if (inactive.Any())
+    {
+      <div class="panel panel-primary panel-list">
+        <div class="panel-heading">
+          <h4>
+            Inactive Enrollments
+            <span class="badge pull-right">@inactive.Count()</span>
+          </h4>
+        </div>
+        <div class="panel-body">
+          @foreach (var enrollment in inactive)
+          {
+            <a href="~/CourseAdmin/EnrollmentDetails/@enrollment.CourseId/@enrollment.EnrollmentId" class="list-group-item">
+              <i class="fa fa-user-times"></i>&nbsp;@enrollment.UserName
+            </a>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

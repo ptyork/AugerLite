@@ -1,0 +1,27 @@
+﻿@{
+    ViewBag.Title = "User Account Settings";
+}
+
+<ol class="breadcrumb">
+  <li><a href="~/">Auger Home</a>
+  <li>Account Settings
+</ol>
+
+<h2>@ViewBag.Title.</h2>
+
+<p class="text-success">@ViewBag.StatusMessage</p>
+<div>
+  <div class="row btn-list">
+    <div class="col-md-3 col-sm-4 col-xs-12">
+      <a href="~/Manage/ManageLogins" class="btn btn-default" role="button">
+        <h4 style="">Manage Linked Logins</h4>
+        <p><i>(Facebook, Google, Microsoft)</i></p>
+      </a>
+    </div>
+    <div class="col-md-3 col-sm-4 col-xs-12">
+      <a href="~/User/Edit" class="btn btn-default" role="button">
+        <h4 style="">Manage User Profile</h4>
+      </a>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,77 @@
+﻿#auger-footer {
+  position: fixed;
+  bottom: 0;
+  right: 10px;
+  width: 300px;
+  color: black;
+  font-size: 11px;
+  /*font-family: Arial,Helvetica,sans-serif;*/
+  font-family: roboto,"century gothic",sans-serif;
+}
+#auger-body {
+  background-color: white;
+  border: 2px solid #337ab7;
+  border-bottom: 0;
+  padding: 10px;
+  text-align:center;
+  clear: right;
+}
+#auger-title {
+  padding: 5px 5px 0;
+  font-size: 14px;
+  font-weight: bold;
+  color: white;
+  background: #337ab7;
+  cursor: pointer;
+  border: 2px solid #337ab7;
+  border-radius: 5px 5px 0 0;
+  float: right;
+}
+#auger-body p {
+  margin: 0;
+  padding: 0 5px 10px;
+  font-weight: bold;
+}
+.auger-modal .modal-content {
+  font-family: roboto,"century gothic",sans-serif;
+  color: #000;
+  font-size: 10pt;
+  background-color: #eee;
+}
+.auger-modal .modal-body {
+  background-color: #fff;
+}
+.auger-modal p {
+  margin: 0 0 10px 35px;
+}
+.auger-modal h2 {
+  font-size: 16pt;
+  font-weight: bold;
+}
+.auger-modal h3 {
+  font-size: 12pt;
+  margin-left: 35px;
+  font-weight: bold;
+}
+.auger-modal h4 {
+  font-size: 14pt;
+  font-weight: bold;
+}
+.auger-modal ul {
+  font-size: 10pt;
+  padding-left: 50px;
+}
+.auger-modal input, .auger-modal select {
+  margin: 0;
+}
+.auger-extract {
+  border: 1px solid black;
+  padding: 2px;
+  margin: 2px 0;
+  background-color: #fcc;
+  font-family: consolas, "courier new", courier, monospace;
+}
+.auger-hilite {
+  background-color: #ff0;
+  font-weight: bold;
+}

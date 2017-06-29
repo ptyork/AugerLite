@@ -1,0 +1,59 @@
+﻿@model IEnumerable<Auger.Models.Data.Course>
+
+@{
+    ViewBag.Title = "Create or Link Course";
+}
+
+<h2>Create or Link Course</h2>
+
+
+@using (Html.BeginForm()) 
+{
+    @Html.AntiForgeryToken()
+    
+    <div class="form-horizontal">
+        <h4>New LMS Course</h4>
+        <p>
+          You may either link this new LMS course to an course already created in Auger
+          or you can create a new course.
+        </p>
+        <hr />
+        <div class="form-group">
+          <div>
+            <input type="radio" name="disposition" value="create" id="create" />
+            <label for="create" class="control-label">Create New Course</label>
+          </div>
+        </div>
+
+        <h5>- OR -</h5>
+
+        <div class="form-group">
+          <div>
+            <input type="radio" name="disposition" value="link" id="link" />
+            <label for="link" class="control-label">Link to a Course</label>
+          </div>
+          <div class="col-md-10 col-sm-8">
+            <select name="courseId">
+              @foreach (var course in Model)
+              {
+                  <option value="@course.CourseId">@course.CourseTitle (@course.CourseLabel)</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-md-offset-2 col-md-10">
+                <input type="submit" value="Submit Choice" class="btn btn-default" />
+            </div>
+        </div>
+    </div>
+}
+
+<div>
+    @Html.ActionLink("Back to List", "Index")
+</div>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}

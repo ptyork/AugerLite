@@ -1,0 +1,71 @@
+﻿@model IEnumerable<Auger.Models.Data.Course>
+
+@{
+    ViewBag.Title = "Manage Courses";
+}
+
+@section Breadcrumbs {
+  <li><a href="~/">Auger Home</a>
+  <li>
+  Manage Courses
+}
+
+<h2>Manage Courses</h2>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="panel panel-primary panel-list course-list">
+      <div class="panel-heading">
+        <h4 class="btn-group btn-group-xs pull-right">
+          <a class="btn btn-xs btn-primary pull-right" href="~/CourseAdmin/CourseCreate">
+            <i class="fa fa-plus"></i>&nbsp;Add New
+          </a>
+        </h4>
+        <h4>Active Courses</h4>
+      </div>
+      <div class="panel-body">
+        @foreach (var course in Model.Where(c => c.IsActive).OrderByDescending(c => c.DateCreated))
+        {
+          <a href="~/CourseAdmin/CourseDetails/@course.CourseId" class="col-md-6 col-lg-4 list-group-item list-group-item-info">
+            <h5>@course.ShortName</h5>
+            <table>
+              <tr>
+                <th>Created:</th>
+                <td>@course.DateCreated.ToShortDateString()</td>
+              </tr>
+              <tr>
+                <th>Enrollments:</th>
+                <td>@course.Enrollments.Where(e => e.IsActive).Count()</td>
+              </tr>
+            </table>
+          </a>
+        }
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="panel panel-warning panel-list course-list">
+      <div class="panel-heading">
+        <h4>Inactive Courses</h4>
+      </div>
+      <div class="panel-body">
+        @foreach (var course in Model.Where(c => !c.IsActive))
+        {
+          <a href="~/CourseAdmin/CourseDetails/@course.CourseId" class="col-md-6 col-lg-4 list-group-item list-group-item-warning">
+            <h5>@course.ShortName</h5>
+            <table>
+                <tr>
+                    <th>Created:</th>
+                    <td>@course.DateCreated.ToShortDateString()</td>
+                </tr>
+                <tr>
+                    <th>Enrollments:</th>
+                    <td>@course.Enrollments.Where(e => e.IsActive).Count()</td>
+                </tr>
+            </table>
+          </a>
+        }
+      </div>
+    </div>
+  </div>
+</div>

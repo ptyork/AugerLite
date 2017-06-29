@@ -1,0 +1,72 @@
+﻿@model Auger.Models.Data.Script
+
+@{
+    ViewBag.Title = "Edit";
+    var pageName = Model.PageId.HasValue ? Model.Page.PageName : "ALL PAGES";
+}
+
+<h2>Edit</h2>
+
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    
+    <div class="form-horizontal">
+      <h4>Script</h4>
+      <hr />
+      @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+      @Html.HiddenFor(model => model.ScriptId)
+
+
+      <div class="form-group">
+        <label class="control-label col-md-2">Page</label>
+        <div class="col-md-10">
+          <input class="form-control" readonly value="@pageName" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        @Html.LabelFor(model => model.ScriptName, new { @class = "control-label col-md-2" })
+        <div class="col-md-10">
+          @Html.EditorFor(model => model.ScriptName, new { @class = "form-control" })
+          @Html.ValidationMessageFor(model => model.ScriptName, "", new { @class = "text-danger" })
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="DeviceId" class="control-label col-md-2">Device</label>
+        <div class="col-md-10">
+          <select name="DeviceId" id="DeviceId" class="form-control">
+            <option value="" @(string.IsNullOrWhiteSpace(Model.DeviceId) ? "" : "selected")>[ALL DEVICES]</option>
+            @foreach (var device in Device.AllDevices)
+            {
+                <option value="@device.DeviceId" @(Model.DeviceId == device.DeviceId ? "selected" : "")>@device.DeviceName</option>
+            }
+          </select>
+          @Html.ValidationMessageFor(model => model.DeviceId, "", new { @class = "text-danger" })
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="col-md-offset-2 col-md-10">
+          @Html.EditorFor(model => model.IsPreGrade)
+          @Html.LabelFor(model => model.IsPreGrade, new { @class = "control-label" })
+          @Html.ValidationMessageFor(model => model.IsPreGrade, "", new { @class = "text-danger" })
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="col-md-offset-2 col-md-10">
+          <input type="submit" value="Save" class="btn btn-success" />
+          <a class="btn btn-default" role="button" href="~/CourseAdmin/ManageScripts/@Model.Assignment.CourseId/@Model.AssignmentId/@Model.ScriptId">
+            Cancel
+          </a>
+        </div>
+      </div>
+    </div>
+}
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}

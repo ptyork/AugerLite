@@ -2,6 +2,13 @@
 @{
     ViewBag.Title = "Home Page";
     ViewBag.BodyClass = "home";
+    string theme = "dark";
+    ApplicationUser user = null;
+    if (Request.IsAuthenticated)
+    {
+      user = ApplicationUser.Current;
+      theme = user.Theme;
+    }
 }
 
 @section scripts {
@@ -9,7 +16,7 @@
 
 <div class="text-center">
   <h1>Welcome to Auger</h1>
-  <img src="~/Content/auger-large.png" alt="auger logo" />
+  <img src="~/Content/auger-large-@(theme).png" alt="auger logo" />
   <h3>
     AIST 2220 / MINF 3618<br />
     Introduction to Web Design

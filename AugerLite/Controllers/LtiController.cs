@@ -213,6 +213,9 @@ namespace Auger.Controllers
                 if (loginUser == null)
                 {
                     // Add login to user
+                    // TODO: This is probably not cool. Need to prompt the user
+                    //       to determine if they want to login as a new user
+                    //       or not.
                     await UserManager.AddLoginAsync(user.Id, login);
                 }
                 else if (user.UserName == loginUser.UserName)
@@ -250,14 +253,17 @@ namespace Auger.Controllers
 
             //
             // Logged in. Let's do real work
+            // Persist an ltiContext in the session because there are a
+            // number of places that depend on it (mostly in CourseAdmin)
             //
             var ltiContext = new LtiContextModel();
-            TempData["ltiContext"] = ltiContext;
+            Session["ltiContext"] = ltiContext;
 
             if (string.IsNullOrWhiteSpace(ltiRequest.Roles))
             {
                 // BAD LTI REQUEST (NO ROLES)
                 // TODO: Make Good Error Page
+                Elmah.ErrorSignal.FromCurrentContext().Raise(new Exception("No Roles in LTI Request"));
                 return RedirectToAction("Index", "Home");
             }
 
@@ -267,6 +273,7 @@ namespace Auger.Controllers
             {
                 // BAD LTI REQUEST (INCORRECT ROLE)
                 // TODO: Make Good Error Page
+                Elmah.ErrorSignal.FromCurrentContext().Raise(new Exception("LTI Request Roles do not include Learner or Instructor"));
                 return RedirectToAction("Index", "Home");
             }
 
@@ -275,6 +282,7 @@ namespace Auger.Controllers
             {
                 // BAD LTI REQUEST (NO CONTEXT)
                 // TODO: Make Good Error Page
+                Elmah.ErrorSignal.FromCurrentContext().Raise(new Exception("No LTI ContextId"));
                 return RedirectToAction("Index", "Home");
             }
 
@@ -291,7 +299,9 @@ namespace Auger.Controllers
             if (course == null && ltiContext.IsInstructor)
             {
                 // NEW COURSE
-                var unlinkedCourses = db.Enrollments.Where(e => e.UserId == user.Id && e.Course.LtiContextId == null).Select(e => e.Course);
+                var unlinkedCourses = db.Enrollments
+                    .Where(e => e.UserId == user.Id && e.Course.LtiContextId == null)
+                    .Select(e => e.Course);
 
                 if (unlinkedCourses.Any())
                 {
@@ -307,6 +317,7 @@ namespace Auger.Controllers
             {
                 // NEW COURSE BUT NOT AN INSTRUCTOR
                 // TODO: Make Good Error Page
+                Elmah.ErrorSignal.FromCurrentContext().Raise(new Exception($"Student accessing {ltiContext.CourseTitle} - {ltiContext.CourseTitle} bit it isn't available yet in Auger"));
                 return RedirectToAction("Index", "Home");
             }
 
@@ -353,6 +364,7 @@ namespace Auger.Controllers
             {
                 // SHOULD NEVER HAPPEN
                 // TODO: Make Good Error Page
+                Elmah.ErrorSignal.FromCurrentContext().Raise(new Exception("Unable to find OR create an enrollment...bad news"));
                 return RedirectToAction("Index", "Home");
             }
 
@@ -375,7 +387,7 @@ namespace Auger.Controllers
             }
 
             //
-            // REDIRECT HERE IF NO ASSIGNMENT SPECIFIED (don't think can happen)
+            // REDIRECT HERE IF NO ASSIGNMENT SPECIFIED
             //
             if (string.IsNullOrWhiteSpace(ltiContext.LtiResourceLinkId))
             {
@@ -400,7 +412,6 @@ namespace Auger.Controllers
 
                 if (unlinkedAssignments.Any())
                 {
-                    // TODO: Create CourseAdmin/AssignmentLink
                     return RedirectToAction("AssignmentLink", "CourseAdmin", new { courseId = course.CourseId });
                 }
                 else
@@ -413,12 +424,15 @@ namespace Auger.Controllers
             {
                 // NEW ASSIGNMENT BUT NOT AN INSTRUCTOR
                 // TODO: Make Good Error Page
+                Elmah.ErrorSignal.FromCurrentContext().Raise(new Exception($"{user.UserName} attempted to access '{ltiContext.CourseTitle}/{ltiContext.AssignmentName}' before it was created."));
                 return RedirectToAction("Index", "Home");
             }
 
+            ltiContext.IsAssignmentLinked = true;
+
             if (ltiContext.IsInstructor)
             {
-                return RedirectToAction("CourseDetails", "CourseAdmin", new { courseId = course.CourseId });
+                return RedirectToAction("AssignmentDetails", "CourseAdmin", new { courseId = course.CourseId, id = assignment.AssignmentId });
             }
             else
             {
@@ -440,6 +454,7 @@ namespace Auger.Controllers
                 {
                     // SHOULD NEVER HAPPEN
                     // TODO: Make Good Error Page
+                    Elmah.ErrorSignal.FromCurrentContext().Raise(new Exception("Enable to find or create StudentAssignment..bad news"));
                     return RedirectToAction("Index", "Home");
                 }
                 else

@@ -1,0 +1,51 @@
+﻿body {
+    background-image: url(background-dark.jpg);
+}
+
+.body-content {
+    /*background-color: #272b30;*/
+}
+
+.panel.course-list a.list-group-item h5 {
+    background-color: #666;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.nav-tabs li a {
+    color: #aaa;
+    background-color: #222;
+}
+
+.nav-tabs li.active a,
+.nav-tabs li.active a:hover,
+.nav-tabs li.active a:focus {
+    background-color: #464645;
+}
+
+.nav-tabs li a:hover {
+    /*background-color: #337AB7;*/
+    color: #fff;
+}
+
+.tab-content {
+    background-color: #464645;
+}
+
+.auger-extract {
+  color: black;
+  background-color: #ee5f5b;
+}
+.auger-hilite {
+  background-color: #ff0;
+  font-weight: bold;
+}
+
+.ace_marker-layer .ace_bracket {
+  background-color: #222 !important;
+  margin: 0 0 0 -2px !important;
+  padding: 0 4px !important;
+}
+
+select {
+    color: #464545;
+}

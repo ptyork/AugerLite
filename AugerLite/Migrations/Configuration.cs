@@ -24,7 +24,7 @@ namespace Auger.Migrations
             {
                 var roleStore = new RoleStore<IdentityRole>(context);
                 var roleManager = new RoleManager<IdentityRole>(roleStore);
-                var role = new IdentityRole { Name = "SuperUser" };
+                var role = new IdentityRole { Name = UserRoles.SuperUserRole };
                 roleManager.Create(role);
 
                 var userStore = new UserStore<ApplicationUser>(context);
@@ -40,7 +40,7 @@ namespace Auger.Migrations
                     Email = "super@test.com"
                 };
                 userManager.Create(user, "password");
-                userManager.AddToRole(user.Id, "SuperUser");
+                userManager.AddToRole(user.Id, UserRoles.SuperUserRole);
 
                 user = new ApplicationUser
                 {

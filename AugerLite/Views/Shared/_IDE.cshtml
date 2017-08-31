@@ -1,0 +1,1672 @@
+﻿@{
+  string theme = "dark";
+  string acetheme = "monokai";
+  if (Request.IsAuthenticated)
+  {
+    theme = ApplicationUser.Current.Theme;
+    if (theme != "dark")
+    {
+      acetheme = "github";
+    }
+  }
+}
+
+<div id="ide-container" class="row full-height">
+  <div id="ide" class="ide hidden-xs" style="display:none;">
+    <div id="folder-pane" class="ide-left-pane collapse in">
+      <div class="panel panel-info">
+        <div class="panel-heading">
+          <div class="btn-group btn-group-xs pull-right" style="margin-top: 6px">
+            <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <i class="fa fa-plus"></i> Add <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+              <li><a id="menu-add-html"><i class="fa fa-file-code-o"></i> HTML File</a>
+              <li><a id="menu-add-css"><i class="fa fa-file-text-o"></i> CSS File</a>
+              <li><a id="menu-add-js"><i class="fa fa-file-o"></i> Javascript File</a>
+              <li><a id="menu-add-other"><i class="fa fa-file-o"></i> Other File</a>
+              <li role="separator" class="divider"></li>
+              <li><a id="menu-add-folder"><i class="fa fa-folder-o"></i> Folder</a>
+              <li role="separator" class="divider"></li>
+              <li><a id="menu-add-upload"><i class="fa fa-upload"></i> Upload File</a>
+              <li role="separator" class="divider"></li>
+              <li><a id="menu-import"><i class="fa fa-download"></i> Import Project...</a>
+            </ul>
+          </div>
+          <h5>
+            Files and Folders
+          </h5>
+        </div>
+        <div id="file-list-container" class="panel-body full-height" style="padding:0;">
+          <div id="file-list" data-folder="/" class="folder-wrapper ide-file-list list-group full-height-overflow"></div>
+        </div>
+      </div>
+    </div>
+    <div id="right-pane" class="ide-right-pane">
+      <div class="ide-horizontal-splitter full-height bg-info hidden-xs">
+        <a data-target="#folder-pane"><span class="sr-only">Toggle file list</span></a>
+      </div>
+      <div class="panel panel-info">
+        <div class="panel-heading">
+          @if (ViewBag.CanSubmit)
+          {
+          <div class="btn-group btn-group-xs pull-right" style="margin-top: 6px">
+            <button id="menu-submit" class="btn btn-primary" type="button"><i class="fa fa-cloud-upload"></i> Submit Assignment</button>
+          </div>
+          }
+          <div class="btn-group btn-group-xs pull-right" style="margin-top: 6px; margin-right: 10px;">
+            <button id="menu-preview" type="button" class="btn btn-primary" data-toggle="button" aria-pressed="false" autocomplete="off"><i class="fa fa-eye"></i> Preview</button>
+          </div>
+          <h5>
+            Selected File: <span id="file-name">N/A</span>
+          </h5>
+        </div>
+        <div id="right-pane-body" class="panel-body">
+          <div id="editor-container" style="float:left;width:100%;overflow:hidden;">
+            <div id="message-container" class="full-height" style="display:none;">
+              <div>
+                <div id="message-icon" class="text-center" style="font-size: 120px"></div>
+                <div id="message-text" class="text-center" style="font-size: 24pt"></div>
+              </div>
+            </div>
+            <div id="image-editor-container" style="display:none;">
+              <img id="image-editor-img" style="display:none;" />
+              <div class="full-height" style="position:relative">
+                <div id="image-editor"></div>
+              </div>
+            </div>
+            <div id="text-editor-container" style="display:none;">
+              <div class="btn-toolbar" style="padding:5px;">
+                <div class="btn-group btn-group-xs">
+                  <button id="menu-save" type="button" class="btn btn-primary"><i class="fa fa-save"></i> Save</button>
+                  <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <span class="caret"></span>
+                    <span class="sr-only">Toggle Dropdown</span>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a id="menu-save-file"><i class="fa fa-file-o"></i> This File</a>
+                    <li><a id="menu-save-all"><i class="fa fa-files-o"></i> All Files</a>
+                  </ul>
+                </div>
+                <div class="btn-group btn-group-xs">
+                  <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa fa-file-o"></i> File <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a id="menu-file-copy"><i class="fa fa-copy"></i> Copy To...</a>
+                    <li><a id="menu-file-move"><i class="fa fa-arrows-alt"></i> Move To...</a>
+                    <li><a id="menu-file-rename"><i class="fa fa-edit"></i> Rename...</a>
+                    <li role="separator" class="divider"></li>
+                    <li><a id="menu-file-delete"><i class="fa fa-close"></i> Delete</a>
+                  </ul>
+                </div>
+                <div class="btn-group btn-group-xs">
+                  <button id="menu-indent" class="btn btn-primary" type="button"><i class="fa fa-indent"></i> Indent</button>
+                  <button id="menu-outdent" class="btn btn-primary" type="button"><i class="fa fa-outdent"></i> Outdent</button>
+                </div>
+                <div class="btn-group btn-group-xs">
+                  <button id="menu-undo" class="btn btn-primary" type="button"><i class="fa fa-undo"></i> Undo</button>
+                  <button id="menu-redo" class="btn btn-primary" type="button"><i class="fa fa-repeat"></i> Redo</button>
+                </div>
+              </div>
+              <div class="bg-info" style="height:2px"></div>
+              <div class="full-height">
+                <div id="text-editor"></div>
+              </div>
+            </div>
+          </div>
+          <div id="preview-container" style="display:none;">
+            <div class="full-height bg-info" style="width:2px;position:absolute;"></div>
+            <div class="preview-inner-container" style="margin-left:2px;overflow:hidden;">
+              <div id="toolbar" class="btn-toolbar" style="padding: 5px;">
+                <div class="btn-group btn-group-xs">
+                  <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa fa-window-maximize"></i> Size <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a class="preview-size" data-size="full">Full Width</a>
+                    <li><a class="preview-size selected" data-size="half">Half Width</a>
+                    <li role="separator" class="divider"></li>
+                    <li><a class="preview-size" data-size="tablet-l"><i class="fa fa-tablet fa-rotate-90"></i> Tablet (landscape)</a>
+                    <li><a class="preview-size" data-size="tablet-p"><i class="fa fa-tablet"></i> Tablet (portrait)</a>
+                    <li><a class="preview-size" data-size="mobile-l"><i class="fa fa-mobile-phone fa-rotate-90"></i> Phone (landscape)</a>
+                    <li><a class="preview-size" data-size="mobile-p"><i class="fa fa-mobile-phone"></i> Phone (portrait)</a>
+                  </ul>
+                </div>
+                <div class="btn-group btn-group-xs">
+                  <button id="preview-refresh" type="button" class="btn btn-primary"><i class="fa fa-refresh"></i>&nbsp;Refresh</button>
+                  <a id="preview-popout" class="btn btn-primary" role="button" target="_blank" href="#"><i class="fa fa-external-link"></i>&nbsp;Pop Out</a>
+                </div>
+                <div style="margin: 2px 0 0 15px;float:left;">
+                  Viewing:&nbsp;&nbsp;&nbsp;<span id="preview-file-name">N/A</span>
+                </div>
+              </div>
+              <div class="bg-info" style="height:2px"></div>
+              <div class="full-height">
+                <iframe id="browser" style="background-color:white;"></iframe>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hidden-sm hidden-md hidden-lg">
+    <div class="panel panel-danger">
+      <div class="panel-heading">Unsupported Device</div>
+      <div class="panel-body">
+        Sorry. You cannot edit files on this device. Use a desktop PC or a larger mobile device.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="new-file-modal" class="modal fade">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">New <span id="new-file-template"></span> File</h4>
+      </div>
+      <div class="modal-body row">
+        <form onsubmit="$('#new-file-confirm-button').click(); return false;">
+          <div class="form-group col-lg-6">
+            <label for="new-file-path" class="control-label">Location</label>
+            <select id="new-file-path" class="form-control"></select>
+          </div>
+          <div id="new-file-name-group" class="form-group col-lg-6">
+            <label for="new-file-name" class="control-label">Name</label>
+            <input id="new-file-name" type="text" class="form-control" />
+            <span class="fa fa-remove form-control-feedback" aria-hidden="true"></span>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button id="new-file-confirm-button" type="button" class="btn btn-primary">Create</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="copy-file-modal" class="modal fade">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">Copy File</h4>
+      </div>
+      <div class="modal-body row">
+        <form onsubmit="$('#copy-file-confirm-button').click(); return false;">
+          <div class="form-group col-lg-6">
+            <label for="copy-file-new-path" class="control-label">New Location</label>
+            <select id="copy-file-new-path" class="form-control"></select>
+          </div>
+          <div id="copy-file-new-name-group" class="form-group col-lg-6">
+            <label for="copy-file-new-name" class="control-label">New Name</label>
+            <input id="copy-file-new-name" type="text" class="form-control" />
+            <span class="fa fa-remove form-control-feedback" aria-hidden="true"></span>
+          </div>
+        </form>
+        <span id="copy-file-source-path" class="hidden"></span>
+      </div>
+      <div class="modal-footer">
+        <button id="copy-file-confirm-button" type="button" class="btn btn-primary">Copy</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="move-file-modal" class="modal fade">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">Move File</h4>
+      </div>
+      <div class="modal-body row">
+        <form onsubmit="$('#move-file-confirm-button').click(); return false;">
+          <div class="form-group">
+            <label for="move-file-new-path" class="control-label">New Location</label>
+            <select id="move-file-new-path" class="form-control"></select>
+          </div>
+        </form>
+        <span id="move-file-source-path" class="hidden"></span>
+      </div>
+      <div class="modal-footer">
+        <button id="move-file-confirm-button" type="button" class="btn btn-primary">Move</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="rename-file-modal" class="modal fade">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">Rename File</h4>
+      </div>
+      <div class="modal-body row">
+        <form onsubmit="$('#rename-file-confirm-button').click(); return false;">
+          <div id="rename-file-new-name-group" class="form-group">
+            <label for="rename-file-new-name" class="control-label">New Name</label>
+            <input id="rename-file-new-name" type="text" class="form-control" />
+            <span class="fa fa-remove form-control-feedback" aria-hidden="true"></span>
+          </div>
+        </form>
+        <span id="rename-file-source-path" class="hidden"></span>
+      </div>
+      <div class="modal-footer">
+        <button id="rename-file-confirm-button" type="button" class="btn btn-primary">Rename</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="delete-file-modal" class="modal alert-warning fade">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title"><i class="fa fa-exclamation-triangle"></i> Delete File</h4>
+      </div>
+      <div class="modal-body row">
+        <p>
+          Are you sure you wish to delete <span id="delete-file-source-path"></span>?
+          This cannot be undone.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button id="delete-file-confirm-button" type="button" class="btn btn-warning">Delete</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="new-folder-modal" class="modal fade">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">New Folder</h4>
+      </div>
+      <div class="modal-body row">
+        <form onsubmit="$('#new-folder-confirm-button').click(); return false;">
+          <div class="form-group col-lg-6">
+            <label for="new-folder-path" class="control-label">Location</label>
+            <select id="new-folder-path" class="form-control"></select>
+          </div>
+          <div id="new-folder-name-group" class="form-group col-lg-6">
+            <label for="new-folder-name" class="control-label">Name</label>
+            <input id="new-folder-name" type="text" class="form-control" />
+            <span class="fa fa-remove form-control-feedback" aria-hidden="true"></span>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button id="new-folder-confirm-button" type="button" class="btn btn-primary">Create</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="copy-folder-modal" class="modal fade">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">Copy Folder</h4>
+      </div>
+      <div class="modal-body row">
+        <form onsubmit="$('#copy-folder-confirm-button').click(); return false;">
+          <div class="form-group col-lg-6">
+            <label for="copy-folder-new-path" class="control-label">New Location</label>
+            <select id="copy-folder-new-path" class="form-control"></select>
+          </div>
+          <div id="copy-folder-new-name-group" class="form-group col-lg-6">
+            <label for="copy-folder-new-name" class="control-label">New Name</label>
+            <input id="copy-folder-new-name" type="text" class="form-control" />
+            <span class="fa fa-remove form-control-feedback" aria-hidden="true"></span>
+          </div>
+        </form>
+        <span id="copy-folder-source-path" class="hidden"></span>
+      </div>
+      <div class="modal-footer">
+        <button id="copy-folder-confirm-button" type="button" class="btn btn-primary">Copy</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="move-folder-modal" class="modal fade">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">Move Folder</h4>
+      </div>
+      <div class="modal-body row">
+        <form onsubmit="$('#move-folder-confirm-button').click(); return false;">
+          <div class="form-group">
+            <label for="move-folder-new-path" class="control-label">New Location</label>
+            <select id="move-folder-new-path" class="form-control"></select>
+          </div>
+        </form>
+        <span id="move-folder-source-path" class="hidden"></span>
+      </div>
+      <div class="modal-footer">
+        <button id="move-folder-confirm-button" type="button" class="btn btn-primary">Move</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="rename-folder-modal" class="modal fade">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">Rename Folder</h4>
+      </div>
+      <div class="modal-body row">
+        <form onsubmit="$('#rename-folder-confirm-button').click(); return false;">
+          <div id="rename-folder-new-name-group" class="form-group">
+            <label for="rename-folder-new-name" class="control-label">New Name</label>
+            <input id="rename-folder-new-name" type="text" class="form-control" />
+            <span class="fa fa-remove form-control-feedback" aria-hidden="true"></span>
+          </div>
+        </form>
+        <span id="rename-folder-source-path" class="hidden"></span>
+      </div>
+      <div class="modal-footer">
+        <button id="rename-folder-confirm-button" type="button" class="btn btn-primary">Rename</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="delete-folder-modal" class="modal alert-warning fade">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title"><i class="fa fa-exclamation-triangle"></i> Delete Folder</h4>
+      </div>
+      <div class="modal-body row">
+        <p>
+          Are you sure you wish to delete <span id="delete-folder-source-path"></span>?
+          This cannot be undone.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button id="delete-folder-confirm-button" type="button" class="btn btn-warning">Delete</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="upload-file-modal" class="modal fade">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">Upload File</h4>
+      </div>
+      <div class="modal-body row">
+        <p>
+          Select a file and a destination folder below. Note that you can also
+          upload one or more files by draging and dropping them onto the main 
+          "Files and Folders" list on the left.
+        </p>
+        <br />
+        <form onsubmit="$('#upload-file-confirm-button').click(); return false;">
+          <div class="form-group">
+            <label for="upload-file-path" class="control-label">Destination</label>
+            <select id="upload-file-path" class="form-control"></select>
+          </div>
+          <div class="form-group">
+            <label for="upload-file-file" class="control-label">Select File</label>
+            <div class="input-group" style="position:absolute;left:20px;right:20px;">
+              <input type="text" id="upload-file-name" class="form-control" readonly />
+              <span class="input-group-addon">
+                <span class="fa fa-folder-o"></span>
+              </span>
+            </div>
+            <input type="file" id="upload-file-file" class="form-control" style="z-index:2;opacity:0;position:relative;cursor:pointer;" />
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button id="upload-file-confirm-button" type="button" class="btn btn-primary">Upload</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="import-project-modal" class="modal alert-danger fade">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title"><i class="fa fa-exclamation-triangle"></i> Import Project</h4>
+      </div>
+      <div class="modal-body row">
+        <p>
+          WARNING: Importing a project will completely replace the contents of this project.
+          This cannot be undone.
+        </p>
+        <form onsubmit="$('#import-project-confirm-button').click(); return false;">
+          <div class="form-group">
+            <label for="import-project-list" class="control-label">Project</label>
+            <select id="import-project-list" class="form-control categorized"></select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button id="import-project-confirm-button" type="button" class="btn btn-danger">Import</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script src="~/Scripts/jquery.nicescroll.js"></script>
+<script src="~/Scripts/ace/ace.js"></script>
+<script src="~/Scripts/ace/ext-language_tools.js"></script>
+<script src="~/Scripts/ace/ext-settings_menu.js"></script>
+@*<script src="http://feather.aviary.com/imaging/v3/editor.js"></script>*@
+<script src="https://dme0ih8comzn4.cloudfront.net/imaging/v3/editor.js"></script>
+<script src="~/Scripts/auger-filemanager.js"></script>
+<script>
+
+  var _fileManager = null;
+
+  /////////////////////////////////////////////////////////////////
+  // EDITOR FILE CLASS
+  /////////////////////////////////////////////////////////////////
+  var _editorFiles = {};
+  var _activeEditorFile = null;
+
+  var _editorFile = function (path,name) {
+    var textExts = ['html', 'htm', 'css', 'js', 'json', 'less', 'txt', 'md', 'php', 'py', 'sass', 'scss', 'ts', 'xhtml', 'xml'];
+    var browserExts = ['html','htm','xhtml'];
+    var imageExts = ['jpg', 'jpeg', 'png', 'gif'];
+    var sourceModes = {};
+    sourceModes['html'] = 'ace/mode/html';
+    sourceModes['htm'] = 'ace/mode/html';
+    sourceModes['css'] = 'ace/mode/css';
+    sourceModes['js'] = 'ace/mode/javascript';
+    sourceModes['json'] = 'ace/mode/json';
+    sourceModes['less'] = 'ace/mode/less';
+    sourceModes['md'] = 'ace/mode/markdown';
+    sourceModes['php'] = 'ace/mode/php';
+    sourceModes['py'] = 'ace/mode/python';
+    sourceModes['sass'] = 'ace/mode/sass';
+    sourceModes['scss'] = 'ace/mode/scss';
+    sourceModes['ts'] = 'ace/mode/typescript';
+    sourceModes['xhtml'] = 'ace/mode/xml';
+    sourceModes['xml'] = 'ace/mode/xml';
+    var defaultSourceMode = 'ace/mode/text';
+
+    this.Path = path;
+    this.Name = name;
+    this.FullPath = path + name;
+    this.IsLoaded = false;
+    this.HasWarnings = false;
+    this.ShouldRemove = false;
+    this.AceSession = null;
+    this.LastSaveText = null;
+    var segments = this.Name.split('.');
+    this.Extension = segments[segments.length - 1];
+    this.IsText = textExts.indexOf(this.Extension) > -1;
+    this.IsImage = imageExts.indexOf(this.Extension) > -1;
+    this.CanBrowse = browserExts.indexOf(this.Extension) > -1;
+    var mode = sourceModes[this.Extension];
+    if (!mode) mode = defaultSourceMode;
+    this.SourceMode = mode;
+    this.getText = function () {
+      if (this.IsText && this.IsLoaded && !!this.AceSession) {
+        return this.AceSession.getValue();
+      } else {
+        return '';
+      }
+    }
+    this.isDirty = function () {
+      if (this.IsLoaded) {
+        if (this.LastSaveText != this.AceSession.getValue()) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
+  /////////////////////////////////////////////////////////////////
+  // TEXT EDITOR SETUP / CONFIG
+  /////////////////////////////////////////////////////////////////
+
+  ace.require('ace/ext/language_tools');
+  var _textEditor = ace.edit('text-editor');
+  ace.require('ace/ext/settings_menu').init(_textEditor);
+
+  _textEditor.setTheme('ace/theme/@acetheme');
+  _textEditor.setFontSize(16);
+  _textEditor.setReadOnly(false);
+  _textEditor.setHighlightActiveLine(true);
+  _textEditor.setBehavioursEnabled(true);
+  _textEditor.setShowFoldWidgets(true);
+  _textEditor.setOptions({
+    enableBasicAutocompletion: true,
+    enableSnippets: false,
+    enableLiveAutocompletion: true
+  });
+
+  _textEditor.commands.addCommands([
+    {
+      name: "showSettingsMenu",
+      bindKey: { win: "Ctrl-q", mac: "Command-q" },
+      exec: function (editor) {
+        editor.showSettingsMenu();
+      },
+      readOnly: true
+    },
+    {
+      name: 'save',
+      bindKey: { win: 'Ctrl-S', mac: 'Command-S' },
+      exec: function (editor) {
+        _saveTextFile(_activeEditorFile).then(_refreshPreview).catch(function (err) {
+          alert(err.message);
+        });
+      },
+      readOnly: false // false if this command should not apply in readOnly mode
+    }
+  ]);
+
+  _textEditor.on('copy', function (text) {
+    //alert(text);
+  });
+  _textEditor.on('paste', function (e) {
+    //alert(e.text);
+  });
+
+  /////////////////////////////////////////////////////////////////
+  // CONFIRM IF DIRTY
+  /////////////////////////////////////////////////////////////////
+
+  var _confirmLeave = function (e) {
+    var dirty = false;
+    for (var fileId in _editorFiles) {
+      var file = _editorFiles[fileId];
+      dirty = dirty || file.isDirty();
+    }
+    if (dirty) {
+      var message = 'There are unsaved files.';
+      e = e || window.event;
+      if (e) { e.returnValue = message; }
+      return message;
+    } else {
+      return;
+    }
+  };
+  window.onbeforeunload = function (e) { return _confirmLeave(e); };
+
+  /////////////////////////////////////////////////////////////////
+  // TEXT EDITOR METHODS/EVENTS
+  /////////////////////////////////////////////////////////////////
+
+  var _loadTextFile = function (editorFile) {
+    return new Promise(function (resolve, reject) {
+      if (editorFile.IsLoaded) {
+        resolve();
+      } else {
+        _reloadTextFile(editorFile).then(resolve, reject);
+      }
+    });
+  }
+
+  var _reloadTextFile = function (editorFile) {
+    return new Promise(function (resolve, reject) {
+      _fileManager.readText(editorFile).then(function (text) {
+        var session = ace.createEditSession(text, editorFile.SourceMode);
+        session.on("changeAnnotation", function () { _onChangeAnnotations(editorFile); });
+        session.on("change", function () { _onUpdateDirty(editorFile); });
+        session.setTabSize(2);
+        session.setUseSoftTabs(true);
+        editorFile.AceSession = session;
+        editorFile.IsLoaded = true;
+        editorFile.LastSaveText = text;
+        resolve();
+      }, reject);
+    });
+  }
+
+  var _saveTextFile = function (editorFile) {
+    return new Promise(function (resolve, reject) {
+      if (!editorFile.isDirty()) {
+        resolve();
+      } else {
+        _fileManager.writeText(editorFile, editorFile.getText()).then(function () {
+          editorFile.LastSaveText = editorFile.getText();
+          _onUpdateDirty(editorFile);
+          resolve();
+        }, reject);
+      }
+    });
+  };
+
+  var _loadEditorFiles = function ($fileList) {
+    for (var fileId in _editorFiles) {
+      _editorFiles[fileId].ShouldRemove = true; // change to false if seen below
+    }
+    $fileList.find("a.file").each(function () {
+      var file = new simpleFile($(this).data('path'));
+      var editorFile = _editorFiles[file.FullPath];
+      if (!editorFile) {
+        var editorFile = new _editorFile(file.Path, file.Name);
+        _editorFiles[editorFile.FullPath] = editorFile;
+        if (editorFile.IsText) {
+          _loadTextFile(editorFile);
+        }
+      } else {
+        if (editorFile.HasWarnings) {
+          $(this).addClass('warn');
+        }
+        if (editorFile.isDirty()) {
+          $(this).addClass('dirty');
+        }
+      }
+      editorFile.ShouldRemove = false;
+    });
+
+    // done loading, so clean up as needed
+    for (var fileId in _editorFiles) {
+      if (_editorFiles[fileId].ShouldRemove) {
+        var session = _editorFiles[fileId].AceSession;
+        if (!!session) session.destroy();
+        delete _editorFiles[fileId];
+      }
+    }
+  };
+
+  var _onChangeAnnotations = function (editorFile) {
+    var annot = editorFile.AceSession.getAnnotations();
+    for (var i = 0; i < annot.length; i++) {
+      // column, raw, row, text, type ('info','error')
+      var a = annot[i];
+      //console.log(annot[i].type + " -- [" + a.row + "," + a.column + "] " + a.text);
+    }
+    var $file = $('a[data-path="' + editorFile.FullPath + '"]');
+    if (annot.length > 0) {
+      editorFile.HasWarnings = true;
+      $file.addClass('warn');
+    } else {
+      editorFile.HasWarnings = false;
+      $file.removeClass('warn');
+    }
+  };
+
+  var _onUpdateDirty = function (editorFile) {
+    var $file = $('a[data-path="' + editorFile.FullPath + '"]');
+    if (editorFile.isDirty()) {
+      $file.addClass('dirty');
+    } else {
+      $file.removeClass('dirty');
+    }
+  };
+
+  var _showTextEditor = function (editorFile) {
+    $('#message-container').hide();
+    $('#image-editor-container').hide();
+    $('#text-editor-container').show();
+    $('#file-name').text(editorFile.FullPath);
+    _textEditor.setSession(editorFile.AceSession);
+    _textEditor.focus();
+    $(window).resize();
+  };
+
+  /////////////////////////////////////////////////////////////////
+  // IMAGE EDITOR METHODS/EVENTS
+  /////////////////////////////////////////////////////////////////
+
+  var _imageEditor = null;
+
+  var _showImageEditor = function (editorFile) {
+    $('#message-container').hide();
+    $('#text-editor-container').hide();
+    $('#image-editor-container').show();
+    $('#file-name').text(editorFile.FullPath);
+
+    var src = _browseRoot + editorFile.FullPath;
+
+    if (!_imageEditor) {
+      showLoadingDiv($('#image-editor'));
+      _imageEditor = new Aviary.Feather({
+        apiKey: 'c1c166186a5e49b9b64faf92291f0d18',
+        theme: '@theme',
+        appendTo: 'image-editor',
+        enableCORS: true,
+        tools: 'resize,crop,orientation,draw,text,enhance,effects,lighting,frames',
+        displayImageSize: true,
+        noCloseButton: true,
+        launchDelay: 0,
+        closeDelay: 0,
+        onSaveButtonClicked: function (imageID) { },
+        onSave: function (imageID, newUrl) {
+          var img = document.getElementById(imageID);
+          img.src = newUrl;
+          _fileManager.saveUrl(new simpleFile(_fileManager.ActiveFilePath), newUrl)
+            .catch(function (ex) { alert(ex.message); });
+          return false; // suppress dialog
+        },
+        onLoad: function () {
+          hideLoadingDiv($('#image-editor'));
+          $('#image-editor-img').attr('src', src);
+          _imageEditor.launch({
+            image: 'image-editor-img'
+          });
+        }
+      });
+    } else {
+      if ($('#image-editor-img').attr('src') !== src) {
+        _imageEditor.close();
+        $('#image-editor-img').attr('src', src);
+        _imageEditor.launch({
+          image: 'image-editor-img'
+        });
+      }
+    }
+
+    $(window).resize();
+  };
+
+  /////////////////////////////////////////////////////////////////
+  // BUSY/READY FUNCTIONS
+  /////////////////////////////////////////////////////////////////
+
+  var _ideBusy = function () {
+    $('#ide').hide();
+    showLoadingDiv($('#ide-container'));
+  }
+
+  var _ideReady = function () {
+    hideLoadingDiv($('#ide-container'));
+    $('#ide').show();
+    $(window).resize();
+  }
+
+  var _filesBusy = function () {
+    $('#file-list').hide();
+    showLoadingDiv($('#file-list-container'));
+  }
+
+  var _filesReady = function () {
+    hideLoadingDiv($('#file-list-container'));
+    $('#file-list').show();
+  }
+
+  /////////////////////////////////////////////////////////////////
+  // MISC EDITOR METHODS
+  /////////////////////////////////////////////////////////////////
+
+  var _showMessage = function (editorFile,icon,text) {
+    $('#text-editor-container').hide();
+    $('#image-editor-container').hide();
+    $('#message-container').show();
+    $('#message-icon').html(icon);
+    $('#message-text').html(text);
+    var path = editorFile ? editorFile.FullPath : 'N/A';
+    $('#file-name').text(path);
+  }
+
+  /////////////////////////////////////////////////////////////////
+  // PREVIEW WINDOW
+  /////////////////////////////////////////////////////////////////
+
+  var _previewSizes = {
+    'half': { previewWidth: '50%', editorWidth: '50%' },
+    'full': { previewWidth: '100%', editorWidth: '0' },
+    'tablet-l': { previewWidth: 1024 },
+    'tablet-p': { previewWidth: 768 },
+    'mobile-l': { previewWidth: 640 },
+    'mobile-p': { previewWidth: 360 }
+  }
+
+  var _previewVisible = false;
+  var _previewSize = _previewSizes['half'];
+  var _previewPath = null;
+
+  var _setPreviewSize = function (newSize) {
+    if (!!_previewSizes[newSize]) {
+      _previewSize = _previewSizes[newSize];
+    }
+  }
+
+  var _resizePreview = function () {
+    if (_previewVisible) {
+      $('#preview-container').css('display','block');
+      var ewidth, pwidth;
+      if (!_previewSize.editorWidth) {
+        var fullwidth = $('#right-pane-body').innerWidth();// - 1; //KLUDGE - 1
+        pwidth = _previewSize.previewWidth;
+        if (pwidth < fullwidth) {
+          ewidth = (fullwidth - pwidth) + 'px';
+          pwidth += 'px';
+        } else {
+          pwidth = fullwidth + 'px';
+          ewidth = '0';
+        }
+      } else {
+        pwidth = _previewSize.previewWidth;
+        ewidth = _previewSize.editorWidth;
+      }
+      $('#preview-container').css('width', pwidth);
+      $('#preview-container').css('margin-left', ewidth);
+      $('#editor-container').css('width', ewidth);
+
+      //$('#browser').getNiceScroll().resize();
+    } else {
+      $('#preview-container').css('display', 'none');
+      $('#editor-container').css('width', '100%');
+    }
+  }
+
+  var _setPreviewPath = function (path) {
+    _previewPath = path;
+    _refreshPreview();
+  }
+
+  var _refreshPreview = function () {
+    if (_previewVisible & !!_previewPath) {
+      $('#preview-file-name').html('<i class="fa fa-spinner fa-pulse fa-fw"></i>&nbsp;<i>loading...</i>');
+      $('#browser').attr('src', _browseRoot + _previewPath);
+    }
+  }
+
+  $(function () {
+    //$('#browser').niceScroll();
+    $('#browser').load(function () {
+      var href = $('#browser')[0].contentWindow.location.href;
+      if (!!href) {
+        $('#preview-popout').attr('href', href);
+        var parts = href.split(_browseRoot);
+        if (parts.length > 0) {
+          $('#preview-file-name').html('<i class="fa fa-file-o"></i>&nbsp;' + parts[1]);
+        }
+      }
+    });
+  });
+
+  /////////////////////////////////////////////////////////////////
+  // ON DOCUMENT READY
+  /////////////////////////////////////////////////////////////////
+
+  $(function () {
+    _ideBusy();
+
+    /////////////////////////////////////////////////////////////////
+    // MAIN IDE EVENTS
+    /////////////////////////////////////////////////////////////////
+
+    $('.ide-horizontal-splitter a').click(function () {
+      var $ide = $(this).closest('.ide');
+      if ($(this).hasClass('collapsed')) {
+        $ide.find('.ide-right-pane').css('width', '99%');
+        $ide.find('.ide-right-pane').animate({ width: '80%' }, 250);
+        $ide.find('.ide-left-pane').animate({ width: '20%' }, 250);
+        $(this).removeClass('collapsed');
+      } else {
+        $ide.find('.ide-left-pane').animate({ width: '0' }, 250);
+        $ide.find('.ide-right-pane').animate({ width: '100%' }, 250);
+        $(this).addClass('collapsed');
+      }
+      setTimeout(function () { $(window).resize(); }, 275);
+    });
+
+    $('body').on('click', '.ide-file-list a.file', function () {
+      var editorFile = _editorFiles[$(this).data('path')];
+      if (!editorFile) {
+        _showMessage(null, '<i class="fa fa-warning"></i>', 'AN UNEXPECTED ERROR OCCURRED!<br>SORRY ABOUT THAT.');
+        return;
+      }
+
+      _activeEditorFile = editorFile;
+      _fileManager.ActiveFilePath = editorFile.FullPath;
+
+      $('.ide-file-list a.file').removeClass('list-group-item-success selected');
+      $(this).addClass('list-group-item-success selected');
+
+      if (editorFile.IsText) {
+        if (editorFile.IsLoaded) {
+          _showTextEditor(editorFile);
+        } else {
+          _showMessage(editorFile, '<i class="fa fa-spinner fa-pulse fa-fw"></i>', 'LOADING<br>PLEASE WAIT');
+          _loadTextFile(editorFile).then(function () {
+            _showTextEditor(editorFile);
+          }).catch(function (err) {
+            _showMessage(editorFile, '<i class="fa fa-warning"></i>', err.message);
+          });
+        }
+      } else if (editorFile.IsImage) {
+        _showImageEditor(editorFile);
+      } else {
+        _showMessage(editorFile, '<i class="fa fa-warning"></i>', 'CANNOT EDIT THIS KIND OF FILE');
+      }
+      if (editorFile.CanBrowse) {
+        _setPreviewPath(editorFile.FullPath);
+      }
+    });
+    
+    /////////////////////////////////////////////////////////////////
+    // FILE / FOLDER MANAGEMENT FUNCTIONS
+    /////////////////////////////////////////////////////////////////
+
+    // include currentPath to exclude it
+    // include self to exclude a folder
+    // returns false if no valid destination folders
+    function _loadFoldersIntoSelect($select, currentPath, self) {
+      $select.empty();
+      for (var i = 0; i < _fileManager.FolderPaths.length; i++) {
+        var path = _fileManager.FolderPaths[i];
+        if (path !== currentPath && !path.startsWith(self)) {
+          var text = path === '/' ? '[ROOT]' : path;
+          $select.append($('<option>', { text: text, value: path }));
+        }
+      }
+      return $select.find('option').length > 0;
+    }
+
+    function _newFile(template) {
+      _loadFoldersIntoSelect($('#new-file-path'));
+      $('#new-file-template').text(template);
+      $('#new-file-name').val('');
+      $('#new-file-modal').modal('show');
+    }
+
+    $('#new-file-modal').on('shown.bs.modal', function () {
+      $('#new-file-name').focus();
+      $('#new-file-name').select();
+    });
+
+    $('#new-file-confirm-button').click(function () {
+      var path = $('#new-file-path').val();
+      var name = $('#new-file-name').val();
+      var template = $('#new-file-template').text();
+
+      var ext = template.toLowerCase();
+      var ext = ext === 'html' ? 'htm|html' : ext;
+      var ext = ext === 'javascript' ? 'js' : ext;
+
+      if (!isValidFilename(name, ext)) {
+        alert(name + ' is not a valid filename.');
+      } else {
+        _fileManager.newFile(name, path, template).then(function () {
+          $('#new-file-modal').modal('hide');
+        }).catch(function (err) {
+          alert(err.message);
+        });
+      }
+    });
+
+    function _newFolder() {
+      _loadFoldersIntoSelect($('#new-folder-path'));
+      $('#new-folder-name').val('');
+      $('#new-folder-modal').modal('show');
+    }
+
+    $('#new-folder-modal').on('shown.bs.modal', function () {
+      $('#new-folder-name').focus();
+      $('#new-folder-name').select();
+    });
+
+    $('#new-folder-confirm-button').click(function () {
+      var path = $('#new-folder-path').val();
+      var name = $('#new-folder-name').val();
+
+      if (!isValidFilename(name)) {
+        alert(name + ' is not a valid filename.');
+      } else {
+        _fileManager.newFolder(name, path).then(function () {
+          $('#new-folder-modal').modal('hide');
+        }).catch(function (err) {
+          alert(err.message);
+        });
+      }
+    });
+
+    function _copy(type, path) {
+      $('#copy-' + type + '-source-path').text(path);
+      var file = new simpleFile(path);
+      $('#copy-' + type + '-new-name').val(file.Name);
+      $('#copy-' + type + '-modal').modal('show');
+      _loadFoldersIntoSelect($('#copy-' + type + '-new-path'));
+    }
+
+    $('#copy-file-modal').on('shown.bs.modal', function () {
+      $('#copy-file-new-name').focus();
+      $('#copy-file-new-name').select();
+    });
+
+    $('#copy-file-confirm-button').click(function () {
+      var sourceFile = new simpleFile($('#copy-file-source-path').text());
+      var newPath = $('#copy-file-new-path').val();
+      var newName = $('#copy-file-new-name').val();
+
+      if (!isValidFilename(newName)) {
+        alert(newName + ' is not a valid file name.');
+      } else {
+        var newFile = new simpleFile(newName);
+        if (sourceFile.Extension !== newFile.Extension) {
+          if (!confirm('Are you sure you want to change the file type from "' +
+            sourceFile.Extension + '" to "' + newFile.Extension + '"?')) {
+            return;
+          }
+        }
+        _fileManager.copyFile(sourceFile, newName, newPath).then(function () {
+          $('#copy-file-modal').modal('hide');
+        }).catch(function (err) {
+          alert(err.message);
+        });
+      }
+    });
+
+    $('#copy-folder-modal').on('shown.bs.modal', function () {
+      $('#copy-folder-new-name').focus();
+      $('#copy-folder-new-name').select();
+    });
+
+    $('#copy-folder-confirm-button').click(function () {
+      var source = new simpleFile($('#copy-folder-source-path').text());
+      var newPath = $('#copy-folder-new-path').val();
+      var newName = $('#copy-folder-new-name').val();
+
+      if (!isValidFilename(newName)) {
+        alert(newName + ' is not a valid folder name.');
+      } else {
+        _fileManager.copyFolder(source, newName, newPath).then(function () {
+          $('#copy-folder-modal').modal('hide');
+        }).catch(function (err) {
+          alert(err.message);
+        });
+      }
+    });
+
+    function _move(type, path) {
+      var source = new simpleFile(path);
+      if (!_loadFoldersIntoSelect($('#move-' + type + '-new-path'), source.Path, source.FullPath)) {
+        alert('No place to move the selected ' + type + '.');
+      } else {
+        $('#move-' + type + '-source-path').text(path);
+        $('#move-' + type + '-modal').modal('show');
+      }
+    }
+
+    $('#move-file-modal').on('shown.bs.modal', function () {
+      $('#move-file-new-path').focus();
+    });
+
+    $('#move-file-confirm-button').click(function () {
+      var newPath = $('#move-file-new-path').val();
+
+      var sourceFile = new simpleFile($('#move-file-source-path').text());
+      _fileManager.moveFile(sourceFile, newPath).then(function () {
+        $('#move-file-modal').modal('hide');
+      }).catch(function (err) {
+        alert(err.message);
+      });
+    });
+
+    $('#move-folder-modal').on('shown.bs.modal', function () {
+      $('#move-folder-new-path').focus();
+    });
+
+    $('#move-folder-confirm-button').click(function () {
+      var newPath = $('#move-folder-new-path').val();
+
+      var source = new simpleFile($('#move-folder-source-path').text());
+      _fileManager.moveFolder(source, newPath).then(function () {
+        $('#move-folder-modal').modal('hide');
+      }).catch(function (err) {
+        alert(err.message);
+      });
+    });
+
+    function _rename(type, path) {
+      $('#rename-' + type + '-source-path').text(path);
+      var file = new simpleFile(path);
+      $('#rename-' + type + '-new-name').val(file.Name);
+      $('#rename-' + type + '-modal').modal('show');
+    }
+
+    $('#rename-file-modal').on('shown.bs.modal', function () {
+      $('#rename-file-new-name').focus();
+      $('#rename-file-new-name').select();
+    });
+
+    $('#rename-file-confirm-button').click(function () {
+      var sourceFile = new simpleFile($('#rename-file-source-path').text());
+      var newName = $('#rename-file-new-name').val();
+
+      if (!isValidFilename(newName)) {
+        alert(newName + ' is not a valid filename.');
+      } else {
+        var newFile = new simpleFile(newName);
+        if (sourceFile.Extension !== newFile.Extension) {
+          if (!confirm('Are you sure you want to change the file type from "' +
+            sourceFile.Extension + '" to "' + newFile.Extension + '"?')) {
+            return;
+          }
+        }
+        _fileManager.renameFile(sourceFile, newName).then(function () {
+          $('#rename-file-modal').modal('hide');
+        }).catch(function (err) {
+          alert(err.message);
+        });
+      }
+    });
+
+    $('#rename-folder-modal').on('shown.bs.modal', function () {
+      $('#rename-folder-new-name').focus();
+      $('#rename-folder-new-name').select();
+    });
+
+    $('#rename-folder-confirm-button').click(function () {
+      var source = new simpleFile($('#rename-folder-source-path').text());
+      var newName = $('#rename-folder-new-name').val();
+
+      if (!isValidFilename(newName)) {
+        alert(newName + ' is not a valid foldername.');
+      } else {
+        _fileManager.renameFolder(source, newName).then(function () {
+          $('#rename-folder-modal').modal('hide');
+        }).catch(function (err) {
+          alert(err.message);
+        });
+      }
+    });
+
+    function _delete(type, path) {
+      $('#delete-' + type + '-source-path').text(path);
+      $('#delete-' + type + '-modal').modal('show');
+    }
+
+    $('#delete-file-modal').on('shown.bs.modal', function () {
+      $('#delete-file-confirm-button').focus();
+    });
+
+    $('#delete-file-confirm-button').click(function () {
+      var sourceFile = new simpleFile($('#delete-file-source-path').text());
+      _fileManager.deleteFile(sourceFile).then(function () {
+        $('#delete-file-modal').modal('hide');
+      }).catch(function (err) {
+        alert(err.message);
+      });
+    });
+
+    $('#delete-folder-modal').on('shown.bs.modal', function () {
+      $('#delete-folder-confirm-button').focus();
+    });
+
+    $('#delete-folder-confirm-button').click(function () {
+      var source = new simpleFile($('#delete-folder-source-path').text());
+      _fileManager.deleteFolder(source).then(function () {
+        $('#delete-folder-modal').modal('hide');
+      }).catch(function (err) {
+        alert(err.message);
+      });
+    });
+
+    function _upload() {
+      $('#upload-file-file').closest('form')[0].reset();
+      if (_loadFoldersIntoSelect($('#upload-file-path'))) {
+        $('#upload-file-modal').modal('show');
+      }
+    }
+
+    $('#upload-file-modal').on('shown.bs.modal', function () {
+      $('#upload-file-path').focus();
+    });
+
+    $('#upload-file-file').change(function () {
+      var file = $('#upload-file-file')[0].files[0];
+      if (!file || !file.name || file.name.length === 0) {
+        $('#upload-file-name').val('');
+      } else {
+        var size = Math.round(file.size / 1024 / 102.4) / 10;
+        if (size > 5) {
+          alert('The selected file approximately ' + size + 'MB. The largest allowed file size is 5MB.');
+        } else {
+          $('#upload-file-name').val(file.name);
+        }
+      }
+
+    });
+
+    $('#upload-file-confirm-button').click(function () {
+      var path = $('#upload-file-path').val();
+      var file = $('#upload-file-file')[0].files[0];
+      if (!file || !file.name || file.name.length === 0) {
+        alert('No file selected.');
+      } else {
+        _fileManager.upload(file, path).then(function () {
+          $('#upload-file-modal').modal('hide');
+        }).catch(function (err) {
+          alert(err.message);
+        });
+      }
+    });
+
+    function _importProject() {
+      _fileManager.loadImportableProjects($('#import-project-list')).then(function () {
+        $('#import-project-modal').modal('show');
+      }).catch(function (err) {
+        alert(err.message);
+      })
+    }
+
+    $('#import-project-modal').on('shown.bs.modal', function () {
+      $('#import-project-list').focus();
+    });
+
+    $('#import-project-confirm-button').click(function () {
+      var $selectedOption = $('#import-project-list option:selected');
+      var type = $selectedOption.data('type');
+      var repositoryId = $selectedOption.attr('value');
+      _fileManager.importProject(type, repositoryId).then(function () {
+        $('#import-project-modal').modal('hide');
+      }).catch(function (err) {
+        alert(err.message);
+      });
+    });
+
+    /////////////////////////////////////////////////////////////////
+    // DRAG AND DROP
+    /////////////////////////////////////////////////////////////////
+
+    $(document).on('dragenter', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      $('.ide-file-list').addClass('droptarget');
+    });
+    $(document).on('dragover', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      var dt = e.originalEvent.dataTransfer;
+      dt.dropEffect = 'none';
+    });
+    $(document).on('dragexit', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      $('.droptarget').removeClass('droptarget');
+      $('.dropover').removeClass('dropover');
+    });
+    $(document).on('dragend', function (e) {
+      $('.droptarget').removeClass('droptarget');
+      $('.dropover').removeClass('dropover');
+    });
+    $(document).on('drop', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    });
+    $(document).on('dragstart', '.ide-file-list a', function (e) {
+      var dt = e.originalEvent.dataTransfer;
+      dt.setData('path', $(this).data('path'));
+    });
+    $(document).on('dragenter', '.ide-file-list', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      $('.dropover').removeClass('dropover');
+      $(this).addClass('dropover');
+    });
+    $(document).on('dragenter', '.ide-file-list a', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      $('.dropover').removeClass('dropover');
+      $(this).closest('.folder-wrapper').addClass('dropover');
+    });
+    $(document).on('dragover', '.ide-file-list, .ide-file-list .folder-wrapper', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      var dt = e.originalEvent.dataTransfer;
+      var isInternal = dt.getData('path').length > 0;
+      dt.dropEffect = isInternal && !e.ctrlKey ? 'move' : 'copy';
+    });
+    $(document).on('dragexit', '.ide-file-list, .ide-file-list .folder-wrapper', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      $(this).removeClass('dropover');
+    });
+    $(document).on('drop', '.ide-file-list, .ide-file-list a.file, .ide-file-list a.folder', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+
+      $('.droptarget').removeClass('droptarget');
+      $('.dropover').removeClass('dropover');
+
+      var targetFolder = $(this).data('folder');
+
+      var dt = e.originalEvent.dataTransfer;
+      var fileCount = dt.files.length;
+
+      var isInternal = fileCount == 0;
+      var isMove = isInternal && !e.ctrlKey;
+
+      if (!isInternal) {
+        _fileManager.upload(dt.files, targetFolder)
+          .catch(function (ex) { alert(ex.message); });
+      } else {
+        var path = dt.getData('path');
+        if (path.length > 0) {
+          var source = new simpleFile(path);
+          if (source.IsFolder) {
+            if (source.Path !== targetFolder && !targetFolder.startsWith(source.FullPath + '/')) {
+              if (isMove) {
+                _fileManager.moveFolder(source, targetFolder)
+                  .catch(function (ex) { alert(ex.message); });
+              } else {
+                _fileManager.copyFolder(source, source.Name, targetFolder)
+                  .catch(function (ex) { alert(ex.message); });
+              }
+            }
+          } else {
+            if (source.Path !== targetFolder) {
+              if (isMove) {
+                _fileManager.moveFile(source, targetFolder)
+                  .catch(function (ex) { alert(ex.message); });
+              } else {
+                _fileManager.copyFile(source, source.Name, targetFolder)
+                  .catch(function (ex) { alert(ex.message); });
+              }
+            }
+          }
+        }
+      }
+    });
+
+    /////////////////////////////////////////////////////////////////
+    // FILE MENU
+    /////////////////////////////////////////////////////////////////
+
+    $('#menu-add-html').click(function () {
+      _newFile('HTML');
+    });
+
+    $('#menu-add-css').click(function () {
+      _newFile('CSS');
+    });
+
+    $('#menu-add-js').click(function () {
+      _newFile('JavaScript');
+    });
+
+    $('#menu-add-other').click(function () {
+      _newFile('');
+    });
+
+    $('#menu-add-folder').click(function () {
+      _newFolder();
+    });
+
+    $('#menu-add-upload').click(function () {
+      _upload();
+    });
+
+    $('#menu-import').click(function () {
+      _importProject();
+    });
+
+    /////////////////////////////////////////////////////////////////
+    // TEXT EDITOR MENU
+    /////////////////////////////////////////////////////////////////
+
+    $('#menu-save,#menu-save-file').click(function () {
+      _saveTextFile(_activeEditorFile).then(_refreshPreview).catch(function (err) {
+        alert(err.message);
+      });
+    });
+
+    $('#menu-save-all').click(function () {
+      var fileCount = 0;
+      for (var id in _editorFiles) {
+        var editorFile = _editorFiles[id];
+        if (editorFile.isDirty()) {
+          fileCount++;
+          _saveTextFile(editorFile).then(function () {
+            if (--fileCount == 0) {
+              _refreshPreview();
+            }
+          }).catch(function (err) {
+            alert(err.message);
+          });
+        }
+      }
+    });
+
+    $('#menu-indent').click(function () {
+      if (!!_textEditor) {
+        _textEditor.indent();
+      }
+    });
+
+    $('#menu-outdent').click(function () {
+      if (!!_textEditor) {
+        _textEditor.blockOutdent();
+      }
+    });
+
+    $('#menu-undo').click(function () {
+      if (!!_textEditor) {
+        _textEditor.undo();
+      }
+    });
+
+    $('#menu-redo').click(function () {
+      if (!!_textEditor) {
+        _textEditor.redo();
+      }
+    });
+
+    $('#menu-file-copy').click(function () {
+      if (!!_activeEditorFile) {
+        _copy('file', _activeEditorFile.FullPath);
+      }
+    });
+
+    $('#menu-file-move').click(function () {
+      if (!!_activeEditorFile) {
+        _move('file', _activeEditorFile.FullPath);
+      }
+    });
+
+    $('#menu-file-rename').click(function () {
+      if (!!_activeEditorFile) {
+        _rename('file', _activeEditorFile.FullPath);
+      }
+    });
+
+    $('#menu-file-delete').click(function () {
+      if (!!_activeEditorFile) {
+        _delete('file', _activeEditorFile.FullPath);
+      }
+    });
+
+    /////////////////////////////////////////////////////////////////
+    // PREVIEW / SUBMIT MENU
+    /////////////////////////////////////////////////////////////////
+
+    $('#menu-preview').click(function () {
+      _previewVisible = !_previewVisible;
+      $(window).resize();
+      if (_previewVisible) {
+        _refreshPreview();
+      }
+    });
+
+    $('#menu-submit').click(function () {
+      _ideBusy();
+      $('#menu-save-all').click();
+      $.post({
+        url: _basePath + '/Submit',
+        data: _baseDataObject,
+        type: 'POST',
+        dataType: 'json'
+      }).done(function (submission) {
+        if (submission.Succeeded) {
+          window.location = '@ViewBag.SubmitRedirect';
+        } else {
+          _ideReady();
+          alert(submission.Exception);
+        }
+      }).fail(function (jqXHR, textStatus, errorThrown) {
+        _ideReady();
+        alert(errorThrown);
+      });
+    });
+
+    $('#preview-refresh').click(function () {
+      _refreshPreview();
+    });
+
+    $('.preview-size').click(function () {
+      $('a.preview-size').removeClass('selected');
+      $(this).addClass('selected');
+      _setPreviewSize($(this).data('size'));
+      $(window).resize();
+    });
+
+    /////////////////////////////////////////////////////////////////
+    // CONTEXT MENU
+    /////////////////////////////////////////////////////////////////
+
+    context.init();
+    context.attach('.ide-file-list a', [
+      { header: 'File Operations'},
+      {
+        text: 'Copy to...',
+        action: function (e) {
+          var type = context.activeTarget().hasClass('folder') ? 'folder' : 'file';
+          _copy(type, context.activeTarget().data('path'))
+        }
+      },
+      {
+        text: 'Move to...',
+        action: function (e) {
+          var type = context.activeTarget().hasClass('folder') ? 'folder' : 'file';
+          _move(type, context.activeTarget().data('path'));
+        }
+      },
+      {
+        text: 'Rename...',
+        action: function (e) {
+          var type = context.activeTarget().hasClass('folder') ? 'folder' : 'file';
+          _rename(type, context.activeTarget().data('path'));
+        }
+      },
+      { divider : true },
+      {
+        text: '<i class="fa fa-close"></i> Delete',
+        action: function (e) {
+          var type = context.activeTarget().hasClass('folder') ? 'folder' : 'file';
+          _delete(type, context.activeTarget().data('path'));
+        }
+      }
+    ]);
+
+    /////////////////////////////////////////////////////////////////
+    // FINAL SETUP
+    /////////////////////////////////////////////////////////////////
+    var $fileList = $("#file-list");
+    var template = $("#folder-template").html();
+
+    _fileManager = new fileManager({
+      basePath: _basePath,
+      baseDataObject: _baseDataObject,
+      listElement: $fileList,
+      template: template
+    });
+
+    _fileManager.onFolderChanging(_filesBusy);
+
+    _fileManager.onFolderChanged(function () {
+      _loadEditorFiles($('#file-list'));
+      if ($('#file-list a.file').length == 0) {
+        _showMessage(null, '<i class="fa fa-hand-o-left"></i>', "It's lonely in here!<br>Use the 'Add' menu to create<br>some files and let's get started.");
+      } else {
+        var $selected = $('#file-list a.selected');
+        if ($selected.length == 0) {
+          $selected = $('#file-list a.file[data-folder="/"]').first();
+        }
+        $selected.click();
+        $selected.parents('.collapse').prev('.collapsed').removeClass('collapsed');
+        $selected.parents('.collapse').addClass('in');
+      }
+      _filesReady();
+      _ideReady();
+    })
+
+    _fileManager.loadFolder();
+  });
+
+  $(window).on('resize', function () {
+    _resizePreview();
+  }, 25);
+  $(window).on('resize', function () {
+    _textEditor.resize();
+  }, 75);
+
+</script>
+
+<script type="text/template" id="folder-template">
+  {{#Folders}}
+  <div class="folder-wrapper">
+    <a class="list-group-item folder level-{{Level}} collapsed" data-path="{{Path}}" data-folder="{{Path}}" data-toggle="collapse" data-target="#{{Id}}" draggable="true">
+      {{Name}}
+    </a>
+    <div class="collapse" id="{{Id}}">
+      <div class="btn-group-xs btn-group-vertical">
+        {{>folder}}
+      </div>
+    </div>
+  </div>
+  {{/Folders}}
+  {{#Files}}
+  <a data-path="{{Path}}" data-folder="{{Folder}}" class="list-group-item file file-{{Type}} level-{{Level}} {{Selected}}" draggable="true">
+    {{Name}}
+  </a>
+  {{/Files}}
+</script>

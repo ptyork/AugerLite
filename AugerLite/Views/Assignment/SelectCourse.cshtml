@@ -5,7 +5,7 @@
 
 @section Breadcrumbs {
   <li><a href="~/">Auger Home</a>
-  <li><a href="~/Assignment/SelectCourse">Choose Course</a>
+  <li>Choose Course
 }
 
 <h3>Choose Course</h3>
@@ -15,11 +15,11 @@
   {
     foreach (Course c in Model.Courses)
     {
-          <div class="col-md-3 col-sm-4 col-xs-12" style="padding: 10px;">
-            <a href="~/Assignment/SelectCourse/@c.CourseId" class="btn btn-primary btn-selector" role="button">
-              <h4 style="">@c.CourseTitle</h4>
-            </a>
-          </div>
+      <div class="col-md-3 col-sm-4 col-xs-12" style="padding: 10px;">
+        <a href="~/Assignment/SelectCourse/@c.CourseId" class="btn btn-primary btn-selector" role="button">
+          <h4 style="">@c.CourseTitle</h4>
+        </a>
+      </div>
     }
   }
   else

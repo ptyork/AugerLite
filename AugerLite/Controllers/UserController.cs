@@ -4,6 +4,7 @@ using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.Owin;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
 using System.Web.Security;
@@ -68,21 +69,51 @@ namespace Auger.Controllers
         }
 
         //
-        // GET: /User/Edit/5
+        // GET: /User/EditSelf
         [Authorize]
-        public ActionResult Edit(string id)
+        public ActionResult EditSelf(string returnUrl)
         {
-            if (string.IsNullOrEmpty(id))
+            var user = UserManager.FindById(User.Identity.GetUserId());
+            var model = new UserProfileModel(user);
+            ViewBag.ReturnUrl = returnUrl;
+            return View(model);
+        }
+
+        //
+        // POST: /User/EditSelf
+        [Authorize]
+        [HttpPost]
+        public async Task<ActionResult> EditSelf(UserProfileModel model, string returnUrl)
+        {
+            if (ModelState.IsValid)
             {
-                id = User.Identity.GetUserId();
-            }
-            else
-            {
-                if (!User.IsInRole(UserRoles.SuperUserRole))
+                var user = UserManager.FindById(model.UserId);
+                if (User.Identity.GetUserId() != user.Id)
                 {
                     return new HttpUnauthorizedResult();
                 }
+                user.Email = model.Email;
+                user.FirstName = model.FirstName;
+                user.LastName = model.LastName;
+                user.Theme = model.Theme;
+
+                UserManager.Update(user);
+
+                var claimsIdentity = await user.GenerateUserIdentityAsync(UserManager);
+                Request.GetOwinContext().Authentication.SignIn(claimsIdentity);
+
+                return RedirectToLocal(returnUrl);
             }
+            ViewBag.ReturnUrl = returnUrl;
+            return View(model);
+        }
+
+
+        //
+        // GET: /User/Edit/5
+        [Authorize(Roles = UserRoles.SuperUserRole)]
+        public ActionResult Edit(string id)
+        {
             var user = UserManager.FindById(id);
             var model = new UserProfileModel(user);
             //model.IsStudent = UserManager.IsInRole(user.Id, UserRoles.StudentRole);
@@ -92,7 +123,7 @@ namespace Auger.Controllers
 
         //
         // POST: /User/Edit/5
-        [Authorize]
+        [Authorize(Roles = UserRoles.SuperUserRole)]
         [HttpPost]
         public ActionResult Edit(UserProfileModel model)
         {
@@ -170,5 +201,16 @@ namespace Auger.Controllers
 
             return RedirectToAction("Index");
         }
+
+        private ActionResult RedirectToLocal(string returnUrl)
+        {
+            if (Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+            return RedirectToAction("Index", "Home");
+        }
+
+
     }
 }

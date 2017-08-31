@@ -28,82 +28,6 @@
       }
     }
   </script>
-
-  <style>
-    /*
-    .ace_scroller {
-      font-weight: bold;
-    }
-    .ace_gutter {
-      color: #888 !important;
-    }
-    */
-    .ace_marker-layer .ace_bracket {
-      background-color:seagreen !important;
-      margin: 0 0 0 -2px !important;
-      padding: 0 4px !important;
-    }
-
-    .panel-heading {
-      padding: 1px 5px !important;
-    }
-    .panel-heading h4 {
-      margin: 5px 0;
-    }
-    .panel-heading .btn-group {
-      margin-top: 4px;
-    }
-
-    .dropdown-menu {
-      border-color: #62686D;
-      background-color: #62686D;
-    }
-    .dropdown-menu a {
-      cursor: pointer;
-    }
-
-    .dropdown-menu {
-      min-width: 0;
-    }
-
-    #folder-div a:before, #folder-div a:after {
-      font-family: FontAwesome;
-      display: inline-block;
-      margin-left: 0.2em;
-      margin-right: 0.2em;
-    }
-    #folder-div a:after {
-      float: right;
-      font-size: 80%;
-      margin-top: 0.2em;
-      padding-left: 0.3em;
-      padding-right: 0.3em;
-      background-color: #c67605;
-      border-radius: 0.5em;
-    }
-    #folder-div .folder:before {
-      content: "\f147  \f115 ";
-    }
-    #folder-div .folder.collapsed:before {
-      content: "\f196  \f114 ";
-    }
-    #folder-div .file-link:before {
-      margin-left: 1.3em;
-      content: "\f15b";
-    }
-    #folder-div .file-link.pregrade:before {
-      content: "\f016";
-    }
-    #folder-div .dirty:after {
-      content: "\f0c7";
-    }
-    #folder-div .warn:after {
-      content: "\f071";
-    }
-    #folder-div .dirty.warn:after {
-      content: "\f0c7  \f071";
-    }
-  </style>
 }
 
 @section Breadcrumbs {
@@ -114,86 +38,99 @@
   <li>@ViewBag.Title
 }
 
-<div class="row full-height hidden-xs">
-  <div id="augeride">
-    <div id="left-pane" class="col-lg-2 col-md-3 col-sm-4" style="padding:0;padding-right:5px;">
-      <div class="panel panel-info file-list full-height" style="border-radius: unset;border-left:unset;">
-        <div class="panel-heading" style="border-radius: unset;">
-          <div class="btn-group pull-right">
-            <button type="button" class="btn btn-xs btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+<div id="ide-container" class="row full-height">
+  <div class="ide hidden-xs">
+    <div id="folder-pane" class="ide-left-pane collapse in">
+      <div class="panel panel-info">
+        <div class="panel-heading">
+          <div class="btn-group btn-group-xs pull-right" style="margin-top: 6px">
+            <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               <i class="fa fa-plus"></i> Add <span class="caret"></span>
             </button>
             <ul class="dropdown-menu">
               <li><a id="menu-add-script"><i class="fa fa-file"></i> Script</a>
             </ul>
           </div>
-          <h4>Scripts</h4>
+          <h5>Scripts</h5>
         </div>
-        <div id="folder-div" class="panel-body list-group">
-          @ShowFolder("Common Scripts", Model.CommonScripts, ViewBag.SelectedScriptId)
-          @foreach (var page in Model.Pages)
-          {
-              @ShowFolder(page.PageName, page.AllScripts, ViewBag.SelectedScriptId)
-          }
+        <div id="file-list-container" class="panel-body full-height" style="padding:0;">
+          <div id="file-list" data-folder="/" class="folder-wrapper ide-file-list list-group full-height-overflow">
+            @ShowFolder("Common Scripts", Model.CommonScripts, ViewBag.SelectedScriptId)
+            @foreach (var page in Model.Pages)
+            {
+                @ShowFolder(page.PageName, page.AllScripts, ViewBag.SelectedScriptId)
+            }
+          </div>
         </div>
       </div>
     </div>
 
-    <div id="right-pane" class="col-lg-10 col-md-9 col-sm-8" style="padding:0;">
-      <div class="panel panel-info file-view" style="border-radius: unset;border-right:unset;">
-        <div class="panel-heading" style="border-radius: unset;">
-          <div class="btn-group btn-group-xs pull-right">
+    <div id="right-pane" class="ide-right-pane">
+      <div class="ide-horizontal-splitter full-height bg-info hidden-xs">
+        <a data-target="#folder-pane"><span class="sr-only">Toggle file list</span></a>
+      </div>
+      <div class="panel panel-info">
+        <div class="panel-heading">
+          <div class="btn-group btn-group-xs pull-right" style="margin-top: 6px">
           </div>
-          <h4>
+          <h5>
             Selected Script: <span id="script-name">N/A</span>
-          </h4>
+          </h5>
         </div>
         @if (Model.AllScripts.Any())
         {
-          <div class="panel-body">
-            <div id="toolbar" class="btn-toolbar" style="padding: 5px;">
-              <div class="btn-group btn-group-sm">
-                <button id="menu-save" type="button" class="btn btn-primary"><i class="fa fa-save"></i> Save</button>
-                <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  <span class="caret"></span>
-                  <span class="sr-only">Toggle Dropdown</span>
-                </button>
-                <ul class="dropdown-menu">
-                  <li><a id="menu-save-2"><i class="fa fa-file"></i> This File</a>
-                  <li><a id="menu-save-all"><i class="fa fa-folder"></i> All Files</a>
-                </ul>
-              </div>
-              <div class="btn-group btn-group-sm">
-                <button id="menu-indent" class="btn btn-primary" type="button"><i class="fa fa-indent"></i> Indent</button>
-                <button id="menu-outdent" class="btn btn-primary" type="button"><i class="fa fa-outdent"></i> Outdent</button>
-                <button id="menu-format" class="btn btn-primary" type="button"><i class="fa fa-magic"></i> Autoformat</button>
-              </div>
-              <div class="btn-group btn-group-sm">
-                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  More <span class="caret"></span>
-                </button>
-                <ul class="dropdown-menu">
-                  <li><a>Action</a>
-                  <li><a>Another action</a>
-                  <li><a>Something else here</a>
-                  <li role="separator" class="divider"></li>
-                  <li><a id="menu-properties"><i class="fa fa-edit"></i> Properties</a>
-                  <li role="separator" class="divider"></li>
-                  <li><a id="menu-delete"><i class="fa fa-close"></i> Delete</a>
-                </ul>
+            <div id="right-pane-body" class="panel-body">
+              <div id="toolbar" class="btn-toolbar" style="padding: 5px;">
+                <div class="btn-group btn-group-xs">
+                  <button id="menu-save" type="button" class="btn btn-primary"><i class="fa fa-save"></i> Save</button>
+                  <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <span class="caret"></span>
+                    <span class="sr-only">Toggle Dropdown</span>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a id="menu-save-2"><i class="fa fa-file"></i> This File</a>
+                    <li><a id="menu-save-all"><i class="fa fa-folder"></i> All Files</a>
+                  </ul>
+                </div>
+                <div class="btn-group btn-group-xs">
+                  <button id="menu-indent" class="btn btn-primary" type="button"><i class="fa fa-indent"></i> Indent</button>
+                  <button id="menu-outdent" class="btn btn-primary" type="button"><i class="fa fa-outdent"></i> Outdent</button>
+                  <button id="menu-format" class="btn btn-primary" type="button"><i class="fa fa-magic"></i> Autoformat</button>
+                </div>
+                <div class="btn-group btn-group-xs">
+                  <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    More <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a>Action</a>
+                    <li><a>Another action</a>
+                    <li><a>Something else here</a>
+                    <li role="separator" class="divider"></li>
+                    <li><a id="menu-properties"><i class="fa fa-edit"></i> Properties</a>
+                    <li role="separator" class="divider"></li>
+                    <li><a id="menu-delete"><i class="fa fa-close"></i> Delete</a>
+                  </ul>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="panel-body panel-info" style="border-top-width:1px;border-top-style:solid;">
-            <div id="editor-div" class="full-height">
-              <div id="editor" style="height:100%;width:100%;"></div>
+            <div class="panel-body panel-info" style="border-top-width:1px;border-top-style:solid;">
+              <div id="editor-div" class="full-height">
+                <div id="editor"></div>
+              </div>
             </div>
-          </div>
         }
         else
         {
-          <div class="panel-body full-height"></div>
+            <div class="panel-body full-height"></div>
         }
+      </div>
+    </div>
+  </div>
+  <div class="hidden-sm hidden-md hidden-lg">
+    <div class="panel panel-danger">
+      <div class="panel-heading">Unsupported Device</div>
+      <div class="panel-body">
+        Sorry. You cannot edit files on this device. Use a desktop PC or a larger mobile device.
       </div>
     </div>
   </div>
@@ -264,7 +201,7 @@
   editor.setTheme("ace/theme/vibrant_ink");
   //editor.setTheme("ace/theme/terminal");
   //editor.setTheme("ace/theme/tomorrow_night_bright");
-  editor.setFontSize(14);
+  editor.setFontSize(16);
   editor.setReadOnly(true);
   editor.setHighlightActiveLine(true);
   editor.setBehavioursEnabled(true);
@@ -385,6 +322,21 @@
   $(function () {
     _augerResize();
 
+    $('.ide-horizontal-splitter a').click(function () {
+      var $ide = $(this).closest('.ide');
+      if ($(this).hasClass('collapsed')) {
+        $ide.find('.ide-right-pane').css('width', '99%');
+        $ide.find('.ide-right-pane').animate({ width: '80%' }, 250);
+        $ide.find('.ide-left-pane').animate({ width: '20%' }, 250);
+        $(this).removeClass('collapsed');
+      } else {
+        $ide.find('.ide-left-pane').animate({ width: '0' }, 250);
+        $ide.find('.ide-right-pane').animate({ width: '100%' }, 250);
+        $(this).addClass('collapsed');
+      }
+      setTimeout(function () { $(window).resize(); }, 250);
+    });
+
     function showFile(file,$button) {
       activeFile = file;
       editor.setReadOnly(false);
@@ -465,19 +417,23 @@
 {
   var id = Guid.NewGuid().ToString();
 
-  <a class="list-group-item folder" data-toggle="collapse" data-target="#@id">
-    @folderName
-  </a>
-  <div class="collapse in" id="@id">
-    @foreach (var script in scripts)
-    {
-      var buttonId = script.ScriptId == selectedScriptId ? "default-script" : "";
-      var scriptClass = script.IsPreGrade ? "pregrade" : "";
+  <div class="folder-wrapper">
+    <a class="list-group-item folder level-0" data-toggle="collapse" data-target="#@id">
+      @folderName
+    </a>
+    <div class="collapse in" id="@id">
+      <div class="btn-group-xs btn-group-vertical">
+        @foreach (var script in scripts)
+        {
+          var buttonId = script.ScriptId == selectedScriptId ? "default-script" : "";
+          var scriptClass = script.IsPreGrade ? "pregrade" : "";
 
-      <script>allFiles[@script.ScriptId] = new _augerFile(@script.ScriptId,'@script.ScriptName');</script>
-      <a data-fileid="@script.ScriptId" id="@buttonId" class="list-group-item file-link @scriptClass">
-        @script.ScriptName
-      </a>
-    }
+            <script>allFiles[@script.ScriptId] = new _augerFile(@script.ScriptId,'@script.ScriptName');</script>
+            <a data-fileid="@script.ScriptId" id="@buttonId" class="list-group-item file file-other level-0 file-link @scriptClass">
+              @script.ScriptName
+            </a>
+        }
+      </div>
+    </div>
   </div>
 }

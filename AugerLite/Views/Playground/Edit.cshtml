@@ -1,0 +1,33 @@
+﻿@model PlaygroundEditViewModel
+@{
+  ViewBag.Title = "Edit Playground";
+  ViewBag.BodyClass = "full";
+  ViewBag.CanSubmit = false;
+}
+
+@section Head {
+  <script>
+    var _basePath = '@Url.Content("~/Playground/")';
+    var _browseRoot = '@Url.Content($"~/BrowsePlay/{Model.Course.CourseId}/{Model.Playground.PlaygroundId}")';
+    var _baseDataObject = {
+      userName: '@User.GetName()',
+      courseId: @Model.Course.CourseId,
+      repositoryId: @Model.Playground.PlaygroundId,
+      playgroundId: @Model.Playground.PlaygroundId
+    };
+  </script>
+}
+
+@section Breadcrumbs {
+  <li><a href="~/">Auger Home</a>
+  <li><a href="~/Playground/SelectCourse">@Model.Course.ShortName</a>
+  <li><a href="~/Playground">Playgrounds</a>
+  <li>@Model.Playground.Name
+}
+
+<div class="visible-xs">
+  Sorry. Editing is not supported on this device.
+</div>
+<div class="hidden-xs">
+  @Html.Partial("_IDE")
+</div>

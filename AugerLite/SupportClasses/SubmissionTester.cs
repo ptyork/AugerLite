@@ -67,10 +67,18 @@ if (typeof Auger === 'undefined') {{
             TestResults fullres = new TestResults();
             List<String> checkedCssFiles = new List<string>();
 
-            var userName = submission.UserName;
-            var user = ApplicationUser.FromUserName(userName);
             var repo = SubmissionRepository.Get(submission.StudentAssignment);
+            repo.Checkout(submission.CommitId);
+
             var assignment = submission.StudentAssignment.Assignment;
+
+            var allDeviceIds = assignment.AllScripts.Select(s => s.DeviceId).Distinct();
+            List<Device> allDevices = new List<Device>();
+            foreach (var deviceId in allDeviceIds)
+            {
+                allDevices.Add(Device.Parse(deviceId));
+            }
+            if (allDevices.Count == 0) allDevices.Add(Device.Large);
 
             using (var browser = BrowserFactory.GetDriver())
             {
@@ -90,10 +98,13 @@ if (typeof Auger === 'undefined') {{
                                 res.AppendResults(W3CValidator.ValidateCSS(repo.FileUri, checkedCssFiles, pageText));
                                 preres.AppendResults(res);
                                 fullres.AppendResults(res);
-                                // TODO: Implement tests against multiple sizes
-                                browser.SetWindowSize(1600, 1024);
-                                preres.AppendResults(TestPage(browser, pageUri, assignment, page, 1600, true));
-                                fullres.AppendResults(TestPage(browser, pageUri, assignment, page, 1600, false));
+
+                                foreach (var device in allDevices)
+                                {
+                                    browser.SetWindowSize(device.ViewportWidth, device.ViewportHeight);
+                                    preres.AppendResults(TestPage(browser, pageUri, assignment, page, device.ViewportWidth, true));
+                                    fullres.AppendResults(TestPage(browser, pageUri, assignment, page, device.ViewportWidth, false));
+                                }
                             }
                             else
                             {
@@ -104,8 +115,8 @@ if (typeof Auger === 'undefined') {{
                     }
                     else
                     {
-                        var folder = SubmissionManager.GetFolder(submission);
-                        _TestFolder(folder, browser, assignment, preres, fullres, checkedCssFiles);
+                        var folder = repo.GetFolder();
+                        _TestFolder(folder, preres, fullres, checkedCssFiles, assignment, allDevices, browser);
                     }
                 }
             }
@@ -116,9 +127,9 @@ if (typeof Auger === 'undefined') {{
             submission.FullResults = fullres;
         }
 
-        private static void _TestFolder(SubmissionFolder folder, IBrowser browser, Assignment assignment, TestResults preres, TestResults fullres, List<string> checkedCssFiles)
+        private static void _TestFolder(RepoFolder folder, TestResults preres, TestResults fullres, List<string> checkedCssFiles, Assignment assignment, List<Device> allDevices, IBrowser browser)
         {
-            foreach (var file in folder.Files.Where(f => f.Type == FileType.HTML))
+            foreach (var file in folder.Files.Where(f => f.Type == FileType.html))
             {
                 var pageUri = new Uri(folder.Uri, file.Name);
 
@@ -130,11 +141,18 @@ if (typeof Auger === 'undefined') {{
                     res.AppendResults(W3CValidator.ValidateCSS(folder.Uri, checkedCssFiles, pageText));
                     preres.AppendResults(res);
                     fullres.AppendResults(res);
-                    // TODO: Implement tests against multiple sizes
-                    browser.SetWindowSize(1600, 1024);
-                    preres.AppendResults(TestPage(browser, pageUri, assignment, null, 1600, true));
-                    fullres.AppendResults(TestPage(browser, pageUri, assignment, null, 1600, false));
+
+                    foreach (var device in allDevices)
+                    {
+                        browser.SetWindowSize(device.ViewportWidth, device.ViewportHeight);
+                        preres.AppendResults(TestPage(browser, pageUri, assignment, null, device.ViewportWidth, true));
+                        fullres.AppendResults(TestPage(browser, pageUri, assignment, null, device.ViewportWidth, false));
+                    }
                 }
+            }
+            foreach (var subfolder in folder.Folders)
+            {
+                _TestFolder(subfolder, preres, fullres, checkedCssFiles, assignment, allDevices, browser);
             }
         }
 

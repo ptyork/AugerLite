@@ -1,0 +1,34 @@
+﻿@model DateTime?
+
+@{
+    var attributes = new Dictionary<string, object>();
+    if (ViewData != null)
+    {
+        foreach (var key in ViewData.Keys)
+        {
+            attributes.Add(key, ViewData[key]);
+        }
+    }
+    var id = Guid.NewGuid().ToString().Replace("-","");
+}
+
+<div class="input-group date" id="@id">
+  @Html.TextBox("", ViewData == null ? null : ViewData.TemplateInfo.FormattedModelValue, attributes)
+  <span class="input-group-addon">
+    <span class="fa fa-calendar"></span>
+  </span>
+</div>
+<script>
+  $(function () {
+    $('#@id').datetimepicker({
+      useCurrent: false,
+      format: 'M/D/YYYY hh:mm A',
+      showTodayButton: true,
+      sideBySide: true,
+      showClose: true,
+      showClear: true,
+      toolbarPlacement: 'top',
+      focusOnShow: false
+    });
+  });
+</script>

@@ -15,6 +15,7 @@ namespace Auger
 
             routes.MapMvcAttributeRoutes();
 
+            // don't forget to add webserver handlers for these in Web.config
             routes.MapRoute(
                 name: "BrowseSelf",
                 url: "Browse/{courseId}/{assignmentId}/{*pathInfo}",
@@ -23,8 +24,32 @@ namespace Auger
 
             routes.MapRoute(
                 name: "BrowseUser",
-                url: "BrowseUser/{courseId}/{userId}/{assignmentId}/{*pathInfo}",
+                url: "BrowseUser/{courseId}/{userName}/{assignmentId}/{*pathInfo}",
                 defaults: new { controller = "Browse", action = "BrowseUser" }
+            );
+
+            routes.MapRoute(
+                name: "BrowseWork",
+                url: "BrowseWork/{courseId}/{assignmentId}/{*pathInfo}",
+                defaults: new { controller = "Browse", action = "BrowseWork" }
+            );
+
+            routes.MapRoute(
+                name: "BrowseUserWork",
+                url: "BrowseUserWork/{courseId}/{userName}/{assignmentId}/{*pathInfo}",
+                defaults: new { controller = "Browse", action = "BrowseUserWork" }
+            );
+
+            routes.MapRoute(
+                name: "BrowsePlay",
+                url: "BrowsePlay/{courseId}/{playgroundId}/{*pathInfo}",
+                defaults: new { controller = "Browse", action = "BrowsePlay" }
+            );
+
+            routes.MapRoute(
+                name: "BrowseUserPlay",
+                url: "BrowseUserPlay/{courseId}/{userName}/{playgroundId}/{*pathInfo}",
+                defaults: new { controller = "Browse", action = "BrowseUserPlay" }
             );
 
             routes.MapRoute(

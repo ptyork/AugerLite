@@ -1,15 +1,54 @@
 ﻿@using System.Security.Claims;
+@{
+    string theme = "dark";
+    ApplicationUser user = null;
+    string avatar = "";
+    if (Request.IsAuthenticated)
+    {
+      user = ApplicationUser.Current;
+      theme = user.Theme;
+      var email = user.Email?.ToLowerInvariant();
+      var sb = new System.Text.StringBuilder();
+      sb.Append("https://www.gravatar.com/avatar/");
+
+      // Use input string to calculate MD5 hash
+      using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create())
+      {
+        byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(email);
+        byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+        // Convert the byte array to hexadecimal string
+        for (int i = 0; i < hashBytes.Length; i++)
+        {
+          sb.Append(hashBytes[i].ToString("x2"));
+        }
+      }
+      sb.Append("?d=mm&s=40");
+      avatar = sb.ToString();
+    }
+}
+
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Auger - @ViewBag.Title</title>
+
   <link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
-  <link id="main-style" rel="stylesheet" href="~/Content/bootstrap-dark.min.css" />
-  <link rel="stylesheet" href="~/Content/font-awesome.min.css" />
-  <link rel="stylesheet" href="~/Content/Site.css" />
+  <link rel="stylesheet" href="~/Content/font-awesome/font-awesome.min.css" />
+  <link rel="stylesheet" href="~/Content/bootstrap/bootstrap-@(theme).min.css" />
+  <link rel="stylesheet" href="~/Content/auger.css" />
+  <link rel="stylesheet" href="~/Content/auger-@(theme).css" />
+
   @Scripts.Render("~/bundles/modernizr")
+  @Scripts.Render("~/bundles/jquery")
+  @Scripts.Render("~/bundles/bootstrap")
+  <script src="~/Scripts/mustache.min.js"></script>
+  <script src="~/Scripts/es6-promise.auto.min.js"></script>
+  <script src="~/Scripts/auger-ui.js"></script>
+
   @RenderSection("head", required: false)
 </head>
 <body class="@ViewBag.BodyClass">
@@ -21,7 +60,7 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a href="~/" class="navbar-brand" style="margin-top: -10px"><img src="~/Content/auger-logo.png" style="height:42px" /></a>
+        <a href="~/" class="navbar-brand" style="padding-top: 9px;padding-bottom:0;"><img src="~/Content/auger-logo.png" style="height:42px" /></a>
       </div>
       <div class="navbar-collapse collapse">
         <ul class="nav navbar-nav">
@@ -29,15 +68,41 @@
           @if (Request.IsAuthenticated)
           {
             <li>@Html.ActionLink("Assignments", "Index", "Assignment")</li>
+            <li>@Html.ActionLink("Playgrounds", "Index", "Playground")</li>
 
-            if (((ClaimsIdentity)User.Identity).HasClaim(c => c.Type == ApplicationUser.SystemRoleClaim && c.Value != UserRoles.LearnerRole))
+            //if (((ClaimsIdentity)User.Identity).HasClaim(c => c.Type == ApplicationUser.SystemRoleClaim && c.Value != UserRoles.LearnerRole))
+            if (ApplicationUser.Current.IsInRole(UserRoles.InstructorRole, UserRoles.SuperUserRole))
             {
               <li>@Html.ActionLink("Administration", "Index", "CourseAdmin")</li>
             }
           }
-          @*<li><a href="http://canvas.instructure.com" target="_blank">Instructure Canvas</a></li>*@
         </ul>
-        @Html.Partial("_LoginPartial")
+        @if (Request.IsAuthenticated)
+        {
+          using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { id = "logoutForm" }))
+          {
+            @Html.AntiForgeryToken()
+          }
+          <ul class="nav navbar-nav navbar-right" style="margin:0">
+            <li class="dropdown">
+              <a href="~/Manage/" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" style="padding-top:10px;padding-bottom:0;">
+                <img src="@avatar" style="border-radius:20px;">&nbsp;@user.FullName&nbsp;<span class="caret"></span>
+              </a>
+              <ul class="dropdown-menu noclose">
+                <li><a href="~/User/EditSelf?returnUrl=@Html.Encode(Request.RawUrl)">User Profile</a></li>
+                <li><a href="~/Manage/ManageLogins">Linked Logins</a></li>
+                <li role="separator" class="divider"></li>
+                <li><a href="javascript:document.getElementById('logoutForm').submit()">Log off</a></li>
+              </ul>
+            </li>
+          </ul>
+        }
+        else
+        {
+          <ul class="nav navbar-nav navbar-right" style="margin:0">
+            <li>@Html.ActionLink("Log in", "Login", "Account", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
+          </ul>
+        }
       </div>
     </div>
   </div>
@@ -61,8 +126,6 @@
     </footer>
   </div>
 
-  @Scripts.Render("~/bundles/jquery")
-  @Scripts.Render("~/bundles/bootstrap")
   @RenderSection("scripts", required: false)
 </body>
 </html>

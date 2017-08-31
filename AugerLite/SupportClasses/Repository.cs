@@ -11,61 +11,71 @@ using System.Threading.Tasks;
 
 namespace Auger
 {
-    public class Repository
+    public abstract class Repository
     {
-        private string _basePath;
-        private string _courseId;
-        private string _userId;
-        private string _assignmentId;
+        private int _courseId;
+        private string _userName;
+        private int _repositoryId;
 
-        private string _assignmentFolderName;
+        private string _repositoryFolderName;
 
         private string _currentCommitId;
 
-        public Repository(string basePath, string courseId, string userId, string assignmentId, bool create = false)
-        {
-            _basePath = basePath;
-            _courseId = courseId.Trim();
-            _userId = userId.Trim().ToLowerInvariant();
-            _assignmentId = assignmentId.Trim();
+        public virtual string BasePath { get; }
 
-            if (!create && !System.IO.Directory.Exists($"{_basePath}\\{_courseId}\\{_userId}\\{_assignmentId}"))
+        public Repository(int courseId, string userName, int repositoryId, bool create = false)
+        {
+            if (string.IsNullOrWhiteSpace(BasePath))
             {
-                throw new FileNotFoundException($"No repository exists for {_courseId}\\{_userId}\\{_assignmentId}.");
+                throw new InvalidOperationException("This repository type has not been initialized.");
+            }
+
+            _courseId = courseId;
+            _userName = userName.Trim().ToLowerInvariant();
+            _repositoryId = repositoryId;
+
+            if (!create && !System.IO.Directory.Exists($"{BasePath}\\{_courseId}\\{_userName}\\{_repositoryId}"))
+            {
+                throw new FileNotFoundException($"No repository exists for {_courseId}\\{_userName}\\{_repositoryId}.");
             }
 
             // init assignment folder + repo
-            _assignmentFolderName = $"{_basePath}\\{_courseId}\\{_userId}\\{_assignmentId}";
-            System.IO.Directory.CreateDirectory(_assignmentFolderName);
-            if (!LibGit2Sharp.Repository.IsValid(_assignmentFolderName))
+            _repositoryFolderName = $"{BasePath}\\{_courseId}\\{_userName}\\{_repositoryId}";
+            System.IO.Directory.CreateDirectory(_repositoryFolderName);
+            if (!LibGit2Sharp.Repository.IsValid(_repositoryFolderName))
             {
-                LibGit2Sharp.Repository.Init(_assignmentFolderName);
+                LibGit2Sharp.Repository.Init(_repositoryFolderName);
             }
         }
 
-        public DirectoryInfo Directory
+        public DirectoryInfo Folder
         {
-            get { return System.IO.Directory.CreateDirectory(_assignmentFolderName); }
+            get { return System.IO.Directory.CreateDirectory(_repositoryFolderName); }
+        }
+
+        public string FilePath
+        {
+            get { return _repositoryFolderName + "\\"; }
         }
 
         public Uri FileUri
         {
-            get { return new Uri(_assignmentFolderName + "\\"); }
+            get { return new Uri(FilePath); }
         }
 
-        public string CourseId
+        public int CourseId
         {
             get { return _courseId; }
         }
 
-        public String UserId
+        public String UserName
         {
-            get { return _userId; }
+            get { return _userName; }
         }
 
-        public string AssignmentId
+        public int RepositoryId
         {
-            get { return _assignmentId; }
+            get { return _repositoryId; }
         }
 
         public string CurrentCommitId
@@ -77,7 +87,7 @@ namespace Auger
         {
             get
             {
-                using (var repo = new LibGit2Sharp.Repository(_assignmentFolderName))
+                using (var repo = new LibGit2Sharp.Repository(_repositoryFolderName))
                 {
                     if (!repo.Commits.Any())
                     {
@@ -92,12 +102,38 @@ namespace Auger
             }
         }
 
-        public void CheckoutSubmission(string commitId = null)
+        public string GetFullPath(string path = "", string name = "")
+        {
+            path = path ?? "";
+            path = path.Replace('/', '\\');
+            var fullPath = $"{path}\\{name}".Trim('\\');
+            return $"{this.FilePath}\\{fullPath}";
+        }
+
+        public void CopyFromRepository(Repository otherRepository)
+        {
+            try
+            {
+                _ClearRepository();
+
+                _Retry(() => {
+                    var thisDir = System.IO.Directory.CreateDirectory(_repositoryFolderName);
+                    var otherDir = System.IO.Directory.CreateDirectory(otherRepository._repositoryFolderName);
+                    otherDir.CopyTo(thisDir);
+                });
+            }
+            catch (Exception e)
+            {
+                throw new ApplicationException("Unable to commit the assignment", e);
+            }
+        }
+
+        public void Checkout(string commitId = null)
         {
             try
             {
                 _ClearRepository(); // Delete the contents to insure no file locks
-                using (var repo = new LibGit2Sharp.Repository(_assignmentFolderName))
+                using (var repo = new LibGit2Sharp.Repository(_repositoryFolderName))
                 {
                     if (!repo.Commits.Any())
                     {
@@ -135,6 +171,93 @@ namespace Auger
             }
         }
 
+        public string Commit(string message = "")
+        {
+            string commitId = null;
+            var now = DateTime.Now;
+            message += $"[{now.ToShortDateString()} {now.ToShortTimeString()}] {message}";
+
+            using (var repo = new LibGit2Sharp.Repository(_repositoryFolderName))
+            {
+                var diffs = repo.Diff.Compare<TreeChanges>(null, true);
+
+                if (diffs.Count() > 0)
+                {
+                    // This is a repository with existing submissions AND this
+                    // commit has changes
+
+                    foreach (var diff in diffs)
+                    {
+                        if (diff.Status == ChangeKind.Added)
+                        {
+                            repo.Index.Add(diff.Path);
+                        }
+                        else if (diff.Status == ChangeKind.Deleted)
+                        {
+                            repo.Index.Remove(diff.Path);
+                        }
+                        Commands.Stage(repo, diff.Path);
+                    }
+
+                    // TODO: Get Signature info from configuration file
+                    Signature sig = new Signature("auger", "admin@auger.in", DateTimeOffset.Now);
+
+                    try
+                    {
+                        commitId = _Retry(() =>
+                        {
+                            var commit = repo.Commit(message, sig, sig);
+                            return commit.Sha;
+                        });
+
+                        if (repo.Tags.Any(t => t.FriendlyName == "LATEST"))
+                        {
+                            repo.Tags.Remove("LATEST");
+                        }
+                        repo.ApplyTag("LATEST");
+                        //repo.ApplyTag("DATETIME", sig, now.Ticks.ToString());
+                    }
+                    catch (EmptyCommitException) { } // ignore this but throw others
+                }
+                else if (!repo.Commits.Any())
+                {
+                    // This is the first commit for this repository
+
+                    // TODO: Get Signature info from configuration file
+                    Signature sig = new Signature("auger", "admin@auger.in", DateTimeOffset.Now);
+
+                    commitId = _Retry(() => {
+                        var commit = repo.Commit(message, sig, sig);
+                        return commit.Sha;
+                    });
+
+                    repo.ApplyTag("LATEST");
+                    //repo.ApplyTag("DATETIME", sig, now.Ticks.ToString());
+                }
+                else
+                {
+                    // No changes to an existing repository. Return null for
+                    // the commitId to indicate no change.
+                }
+            }
+            _currentCommitId = commitId;
+            return commitId;
+        }
+
+        public string CommitFromRepository(Repository otherRepository)
+        {
+            try
+            {
+                Checkout();   // Move HEAD to LATEST checkout
+                CopyFromRepository(otherRepository);
+                return Commit();
+            }
+            catch (Exception e)
+            {
+                throw new ApplicationException("Unable to commit the assignment", e);
+            }
+        }
+
         List<string> _zipIgnoreList = new List<string>() {
             "__MACOSX",
             ".DS_Store"
@@ -152,11 +275,11 @@ namespace Auger
             return false;
         }
 
-        public string CommitAssignmentFromZip(Stream zipStream)
+        public string CommitFromZip(Stream zipStream)
         {
             try
             {
-                CheckoutSubmission();   // Move HEAD to LATEST checkout
+                Checkout();   // Move HEAD to LATEST checkout
                 _ClearRepository();     // Clear the current submission for complete replacement
                 using (var zstr = new ZipInputStream(zipStream))
                 {
@@ -235,12 +358,12 @@ namespace Auger
                             continue;
                         }
                         folder = folder.Substring(rootLen);
-                        System.IO.Directory.CreateDirectory($"{_assignmentFolderName}\\{folder}");
+                        System.IO.Directory.CreateDirectory($"{_repositoryFolderName}\\{folder}");
 
                         var fileName = Path.GetFileName(zentry.FileName);
                         if (fileName.Length > 0)
                         {
-                            using (var fstr = File.Create($"{_assignmentFolderName}\\{folder}\\{fileName}"))
+                            using (var fstr = File.Create($"{_repositoryFolderName}\\{folder}\\{fileName}"))
                             {
                                 zstr.CopyTo(fstr);
                                 fstr.Flush(true);
@@ -249,7 +372,7 @@ namespace Auger
                         }
                     }
                 }
-                return _Commit();
+                return Commit();
             }
             catch (Exception e)
             {
@@ -257,11 +380,12 @@ namespace Auger
             }
         }
 
-        public string CommitAssignmentFromUrl(string url)
+        // TODO: DELETE THIS METHOD
+        public string CommitFromUrl(string url)
         {
             try
             {
-                CheckoutSubmission();   // Move HEAD to LATEST checkout
+                Checkout();   // Move HEAD to LATEST checkout
                 _ClearRepository();     // Clear the current submission for complete replacement
                 var path = Path.GetDirectoryName(Assembly.GetAssembly(typeof(SubmissionRepository)).CodeBase);
                 var baseUri = new Uri(new Uri(url), ".");
@@ -269,11 +393,11 @@ namespace Auger
                 var startInfo = new ProcessStartInfo();
                 startInfo.Arguments = $"-p -k -r -nH --cut-dirs={dirCount} {url}";
                 startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                startInfo.WorkingDirectory = _assignmentFolderName;
+                startInfo.WorkingDirectory = _repositoryFolderName;
                 startInfo.FileName = $"{path}\\wget.exe";
                 var proc = Process.Start(startInfo);
                 proc.WaitForExit(5000);
-                return _Commit();
+                return Commit();
             }
             catch (Exception e)
             {
@@ -281,92 +405,25 @@ namespace Auger
             }
         }
 
-        public static string GetCommitName(DateTime commitTime)
-        {
-            return commitTime.Ticks.ToString();
-        }
-
         private void _ClearRepository()
         {
             _Retry(() => {
-                var repoDir = System.IO.Directory.CreateDirectory(_assignmentFolderName);
+                var repoDir = System.IO.Directory.CreateDirectory(_repositoryFolderName);
                 foreach (var file in repoDir.GetFiles())
                 {
-                    file.Delete();
+                    if (!file.Attributes.HasFlag(FileAttributes.Hidden) && !file.Name.StartsWith("."))
+                    {
+                        file.Delete();
+                    }
                 }
                 foreach (DirectoryInfo dir in repoDir.GetDirectories())
                 {
-                    if ((dir.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
+                    if (!dir.Attributes.HasFlag(FileAttributes.Hidden) && !dir.Name.StartsWith("."))
                     {
                         dir.Delete(true);
                     }
                 }
             });
-        }
-
-        private string _Commit()
-        {
-            string commitId = null;
-            using (var repo = new LibGit2Sharp.Repository(_assignmentFolderName))
-            {
-                var diffs = repo.Diff.Compare<TreeChanges>(null, true);
-
-                if (diffs.Count() > 0)
-                {
-                    // This is a repository with existing submissions AND this
-                    // commit has changes
-
-                    foreach (var diff in diffs)
-                    {
-                        if (diff.Status == ChangeKind.Added)
-                        {
-                            repo.Index.Add(diff.Path);
-                        }
-                        else if (diff.Status == ChangeKind.Deleted)
-                        {
-                            repo.Index.Remove(diff.Path);
-                        }
-                        Commands.Stage(repo, diff.Path);
-                    }
-
-                    // TODO: Get Signature info from configuration file
-                    Signature sig = new Signature("auger", "admin@auger.org", DateTimeOffset.Now);
-
-                    try
-                    {
-                        commitId = _Retry(() =>
-                        {
-                            var commit = repo.Commit(GetCommitName(DateTime.Now), sig, sig);
-                            return commit.Sha;
-                        });
-                        if (repo.Tags.Any(t => t.FriendlyName == "LATEST"))
-                        {
-                            repo.Tags.Remove("LATEST");
-                        }
-                        repo.ApplyTag("LATEST");
-                    }
-                    catch (EmptyCommitException) { } // ignore this but throw others
-                }
-                else if (!repo.Commits.Any())
-                {
-                    // This is the first commit for this repository
-
-                    // TODO: Get Signature info from configuration file
-                    Signature sig = new Signature("auger", "admin@auger.org", DateTimeOffset.Now);
-                    commitId = _Retry(() => {
-                        var commit = repo.Commit(GetCommitName(DateTime.Now), sig, sig);
-                        return commit.Sha;
-                    });
-                    repo.ApplyTag("LATEST");
-                }
-                else
-                {
-                    // No changes to an existing repository. Return null for
-                    // the commitId to indicate no change.
-                }
-            }
-            _currentCommitId = commitId;
-            return commitId;
         }
 
         private void _Retry(Action func)

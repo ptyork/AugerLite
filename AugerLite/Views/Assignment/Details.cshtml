@@ -3,283 +3,157 @@
 @model AssignmentDetailsViewModel
 
 @{
-    ViewBag.Title = "View or Submit " + Model.Assignment.AssignmentName;
+    ViewBag.Title = Model.Assignment.AssignmentName;
     ViewBag.BodyClass = "full";
+    ViewBag.BrowseRoot = @Url.Content($"~/Browse/{Model.Course.CourseId}/{Model.Assignment.AssignmentId}");
     bool hasSubmissions = Model.Submissions.Any();
-    string submit = hasSubmissions ? "Resubmit" : "Submit";
 }
 
 @section Breadcrumbs {
   <li><a href="~/">Auger Home</a>
-  <li><a href="~/Assignment/SelectCourse">@Model.Assignment.Course.ShortName</a>
+  <li><a href="~/Assignment/SelectCourse">@Model.Course.ShortName</a>
   <li><a href="~/Assignment">Assignments</a>
   <li>@Model.Assignment.AssignmentName
 }
 
-<h3>View or Submit Assignment</h3>
-
-<div class="row" style="margin-bottom:25px;">
-  <div class="col-xs-6">
-    <table>
-      <tr>
-        <th>Assignment Name:</th>
-        <td style="padding-left:5px;">@Model.Assignment.AssignmentName</td>
-      </tr>
-      @if (Model.Assignment.DueDate.HasValue)
-      {
-        var due = Model.Assignment.DueDate.Value;
-        <tr>
-          <th>Assignment Due By:</th>
-          <td style="padding-left:5px;">@due.ToShortDateString() @due.ToShortTimeString()</td>
-        </tr>
-      }
-    </table>
-  </div>
-  @if (hasSubmissions)
+<h3 style="margin-bottom:0;">
+  @Model.Assignment.AssignmentName
+  <a href="~/Assignment/Edit/@Model.Assignment.AssignmentId" class="btn btn-primary pull-right hidden-xs" role="button">
+    <span class="fa fa-edit"></span>&nbsp;Edit Assignment
+  </a>
+</h3>
+<table class="small" style="margin-bottom: 10px">
+  @if (Model.Assignment.DueDate.HasValue)
   {
-    <div class="col-xs-6 form-inline text-right">
-      <label for="selectSubmission">Submission:</label>&nbsp;
-      <select class="form-control" id="selectSubmission" name="selectSubmission">
-        @foreach (var submissionChoice in Model.Submissions)
-        {
-          var selected = submissionChoice.StudentSubmissionId == Model.SelectedSubmission.Submission.StudentSubmissionId ? "selected" : "";
+    var due = Model.Assignment.DueDate.Value;
 
-            <option value="@submissionChoice.StudentSubmissionId" @selected>@submissionChoice.SubmissionName</option>
-        }
-      </select>
-    </div>
+    <tr>
+      <th>Assignment Due By:</th>
+      <td style="padding-left:5px;">@due.ToShortDateString() @due.ToShortTimeString()</td>
+    </tr>
   }
-</div>
-
-<div class="text-center hidden" id="busydiv" style="padding: 50px">
-  <div class="fa fa-spin fa-spinner" style="font-size: 60pt;"></div>
-  <div style="font-size: 18pt; margin-top: 50px;">LOADING<br>PLEASE WAIT</div>
-</div>
-<div id="resultsdiv">
   @if (hasSubmissions)
   {
-    <a id="retest" class="pull-right btn btn-sm btn-primary" role="button">
-      <span class="fa fa-check"></span>&nbsp;Re-test Submission
+    <tr>
+      <th>Submission Date:</th>
+      <td>
+        <select class="" id="selectSubmission" name="selectSubmission">
+          @foreach (var submissionChoice in Model.Submissions)
+          {
+            <option value="@submissionChoice.StudentSubmissionId">@submissionChoice.SubmissionName</option>
+          }
+        </select>
+      </td>
+    </tr>
+  }
+</table>
+
+@if (hasSubmissions)
+{
+  <div id="page-loading-div"></div>
+  <div id="results-div" class="hidden"> <!-- DEFAULT TO HIDDEN -->
+    <a id="retest" class="pull-right btn btn-sm btn-default" role="button">
+      <span class="fa fa-check"></span>&nbsp;Recheck
     </a>
-  }
-
-  <ul class="nav nav-tabs" id="tabs">
-    @if (hasSubmissions)
-    {
-      <li class="active"><a data-toggle="tab" id="tabFeedback" href="#paneFeedback">View Feedback</a></li>
-      <li class=""><a data-toggle="tab" id="tabView" href="#paneView">View Submission</a></li>
-    }
-    <li class="@(hasSubmissions ? "" : "active")"><a data-toggle="tab" id="tabSubmit" href="#paneSubmit">@submit Assignment</a></li>
-  </ul>
-  <div class="tab-content text-left" style="padding:10px 15px 15px 15px">
-    @if (hasSubmissions)
-    {
-      var submission = Model.SelectedSubmission;
-      ViewBag.SubmissionName = submission.Submission.SubmissionName;
-
+    <ul class="nav nav-tabs" id="tabs">
+      <li class="active"><a data-toggle="tab" id="tabFeedback" href="#paneFeedback">Feedback</a></li>
+      <li class=""><a data-toggle="tab" id="tabView" href="#paneView">Submission</a></li>
+    </ul>
+    <div class="tab-content" style="padding:0">
       <div class="tab-pane active" id="paneFeedback">
-        @Html.Partial("_ViewFeedback", submission.Submission.PreSubmissionResults ?? new TestResults())
+        @Html.Partial("_ViewFeedback")
       </div>
 
       <div class="tab-pane" id="paneView">
-        @Html.Partial("_ViewSubmission", submission)
+        @Html.Partial("_ViewSubmission")
       </div>
-    }
-
-    <div class="tab-pane @(hasSubmissions ? "" : "active")" id="paneSubmit">
-      <div id="busySubmit" class="text-center" style="padding: 50px; display: none;">
-        <div class="fa fa-spin fa-spinner" style="font-size: 60pt;"></div>
-        <div style="font-size: 18pt; margin-top: 50px;">SUBMITTING ASSIGNMENT<br>PLEASE WAIT</div>
-      </div>
-      <div id="busyValidate" class="text-center" style="padding: 50px; display: none;">
-        <div class="fa fa-spin fa-spinner" style="font-size: 60pt;"></div>
-        <div style="font-size: 18pt; margin-top: 50px;">SUBMITTED..VALIDATING ASSIGNMENT<br>PLEASE WAIT</div>
-      </div>
-      <div id="readySubmit" class="full-height">
-        <p>
-          You may either create and submit a compressed ("zip") file containing your entire web site
-          folder or you may submit the fully qualified URL of your web site's home page. If you submit
-          a URL, please insure that the URL is publicly accessible (i.e., it should not start with
-          "file://" or "http://localhost").
-        </p>
-        @*<form id="submitForm" method="post" enctype="multipart/form-data" action="@Url.Action("Submit")">*@
-        <form id="submitForm" method="post" enctype="multipart/form-data" action="@Url.Action("SubmitAjax")">
-          <input type="hidden" name="courseId" value="@Model.Assignment.CourseId" />
-          <input type="hidden" name="assignmentId" value="@Model.Assignment.AssignmentId" />
-
-          <div class="row">
-
-            <div class="col-md-4 col-sm-5">
-              <div class="panel panel-primary">
-                <div class="panel-heading">
-                  Zip File
-                </div>
-                <div class="panel-body">
-                  <label id="fileLabel" class="btn btn-default" for="zipfile">
-                    <input type="file" id="zipfile" name="zipfile" accept=".zip, application/zip" style="display:none;">
-                    <i class="fa fa-search"></i>&nbsp;Select Zip File
-                  </label>
-                  <label id="fileCancel" class="btn btn-default" style="display:none;">
-                    <i class="fa fa-remove"></i>&nbsp;<span id="fileName"></span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-sm-1 text-center">
-              <h4>OR</h4>
-            </div>
-
-            <div class="col-md-7 col-sm-6">
-              <div class="panel panel-primary">
-                <div class="panel-heading">
-                  URL
-                </div>
-                <div class="panel-body">
-                  <input type="url" id="url" name="url" class="form-control" style="max-width:none;" placeholder="Enter Fully Qualified URL" />
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          <button id="submit" name="submit" value="Submit" class="btn btn-primary">
-            <i class="fa fa-cloud-upload"></i>
-            &nbsp;Submit Assignment
-          </button>
-        </form>
-
-      </div>
-
     </div>
   </div>
-</div>
+}
+else
+{
+  <div class="panel panel-default" style="margin-top:20px;">
+    <div class="panel-heading">
+      <h4>No Submission Yet</h4>
+    </div>
+    <div class="panel-body">
+      You have not yet submitted this assignment. Once you have edited and
+      submitted the assignment, you will see your submission as well as some
+      preliminary feedback here.
+    </div>
+  </div>
+}
 
-  @section Scripts {
-    <script src="@Url.Content("~/Scripts/jquery.form.min.js")"></script>
-    <script>
+@section Scripts {
+  <script>
 
-        function resetFormElement($e) {
-          $e.wrap('<form>').closest('form').get(0).reset();
-          $e.unwrap();
-        }
+    $(function () {
 
-        function cancelFile() {
-          resetFormElement($('#zipfile'));
-          $('#fileLabel').show();
-          $('#fileCancel').hide();
-        }
+      $('#selectSubmission').change(function () {
+        FolderChanging();
+        FeedbackChanging();
 
-        zipMimes = [
-          'application/octet-stream',
-          'binary/octet-stream',
-          'multipart/x-zip',
-          'application/zip',
-          'application/zip-compressed',
-          'application/x-zip-compressed'
-        ];
+        $('#selectSubmission').prop('disabled', true);
+        showLoadingDiv($('#page-loading-div'));
+        $('#results-div').addClass('hidden');
 
-        $(function () {
-          $('#submitForm').ajaxForm({
-            resetForm: true,
-            beforeSubmit: function () {
-              if ($('#url').val().trim().length == 0 && $('#fileLabel').is(':visible')) {
-                alert('Cannot submit nothing');
-                return false;
-              }
+        var submissionId = $('#selectSubmission').val();
 
-              $('#readySubmit').hide();
-              $('#busySubmit').show();
-            },
-            success: function (data) {
-              if (!data.Succeeded) {
-                alert(data.Exception);
-                $('#busySubmit').hide();
-                $('#readySubmit').show();
-                cancelFile();
-                return;
-              }
+        $.ajax({
+          url: '@Url.Action("GetSubmissionDetails")',
+          data: {
+            userId: '@ApplicationUser.Current.Id',
+            courseId: @Model.Course.CourseId,
+            assignmentId: @Model.Assignment.AssignmentId,
+            submissionId: submissionId
+          },
+          type: 'POST',
+          dataType: 'json'
+        }).done(function (data) {
+          FolderChanged(data.Folder);
+          FeedbackChanged(data.Results);
 
-              $('#busySubmit').hide();
-              $('#busyValidate').show();
+          $('#selectSubmission').prop('disabled', false);
+          hideLoadingDiv($('#page-loading-div'));
+          $('#results-div').removeClass('hidden');
 
-              $.ajax({
-                url: '@Url.Action("TestAjax")',
-                data: {
-                  courseId: '@Model.Assignment.CourseId',
-                  assignmentId: '@Model.Assignment.AssignmentId'
-                },
-                type: 'POST',
-                dataType: 'json'
-              }).done(function (data) {
-                location.href = '@Url.Content($"~/Assignment/Details/{Model.Assignment.AssignmentId}")';
-              }).fail(function (xhr, textStatus, errorThrown) {
-                alert(errorThrown);
-                $('#busyValidate').hide();
-                $('#readySubmit').show();
-                cancelFile();
-              });
-            },
-            error: function (xhr, textStatus, errorThrown) {
-              alert(errorThrown);
-              $('#busySubmit').hide();
-              $('#readySubmit').show();
-              cancelFile();
-            }
-          });
-
-          input = $('#zipfile')[0];
-          $('#zipfile').on('change', function () {
-            if (input.files[0]) {
-              var mimeType = input.files[0].type;
-              if (mimeType.length == 0 || zipMimes.indexOf(mimeType) != -1) {
-                $('#fileName').html($('#zipfile').val());
-                $('#fileLabel').hide();
-                $('#fileCancel').show();
-              } else {
-                alert('You can only submit Zip files.\n\nMIME Type:' + mimeType);
-                resetFormElement($('#zipfile'));
-              }
-            }
-          });
-
-          $('#fileCancel').on('click', function () {
-            cancelFile();
-          });
-          cancelFile();
-
-          $('#selectSubmission').change(function () {
-            $('#selectSubmission').prop('disabled', true);
-            $('#resultsdiv').addClass('hidden');
-            $('#busydiv').removeClass('hidden');
-            var submissionId = $('#selectSubmission').val();
-            window.location.href = '@Url.Content($"~/Assignment/SubmissionDetails/{Model.Assignment.AssignmentId}?submissionId=")' + submissionId;
-          });
-
-          $('#retest').click(function () {
-            var $btn = $('#retest');
-            $btn.html('<i class="fa fa-spinner"></i>');
-            $btn.addClass('btn-danger disabled');
-            $.ajax({
-              url: '@Url.Action("TestAjax")',
-              data: {
-                courseId: '@Model.Assignment.CourseId',
-                assignmentId: '@Model.Assignment.AssignmentId',
-                submissionId: '@(hasSubmissions ? Model.SelectedSubmission.Submission.StudentSubmissionId.ToString() : "")'
-              },
-              type: 'POST',
-              dataType: 'json'
-            }).done(function (data) {
-              location.reload();
-            }).fail(function (xhr, textStatus, errorThrown) {
-              alert(errorThrown);
-            });
-            return false;
-          });
-
+          $(window).resize();
+        }).fail(function (xhr, textStatus, errorThrown) {
+          alert(errorThrown);
         });
-    </script>
+      });
+      $('#selectSubmission').val($('#selectSubmission option:last').val());
+      $('#selectSubmission').change();
 
-    @Html.Partial("_ViewSubmissionScript", Url.Content($"~/Browse/{Model.Assignment.CourseId}/{Model.Assignment.AssignmentId}"))
+      $('#retest').click(function () {
+        FeedbackChanging();
 
-  }
+        var $btn = $('#retest');
+        var btnText = $btn.html();
+        $btn.html('<i class="fa fa-spinner fa-spin"></i> Testing...');
+        $btn.addClass('disabled');
+
+        $.ajax({
+          url: '@Url.Action("RetestSubmission")',
+          data: {
+            userId: '@ApplicationUser.Current.Id',
+            courseId: '@Model.Assignment.CourseId',
+            assignmentId: '@Model.Assignment.AssignmentId',
+            submissionId: $('#selectSubmission').val()
+          },
+          type: 'POST',
+          dataType: 'json'
+        }).done(function (data) {
+          FeedbackChanged(data);
+
+          $btn.html(btnText);
+          $btn.removeClass('disabled');
+        }).fail(function (xhr, textStatus, errorThrown) {
+          alert(errorThrown);
+        });
+        return false;
+      });
+
+    });
+  </script>
+}

@@ -1,42 +1,108 @@
-﻿@using Auger.Models
-@model SubmissionViewModel
+﻿@{
+  string theme = "dark";
+  string acetheme = "monokai";
+  if (Request.IsAuthenticated)
+  {
+    theme = ApplicationUser.Current.Theme;
+    if (theme != "dark")
+    {
+      acetheme = "github";
+    }
+  }
+}
 
-<div class="row">
-  <div class="col-xs-4 col-sm-3 col-md-2" style="padding-right:0;padding-left:10px;">
+<script>
+    // declare top-level events
+    var FOLDER_CHANGING_EVENT = 'folderchanging';
+    function FolderChanging() {
+      var evt = $.Event(FOLDER_CHANGING_EVENT);
+      $(window).trigger(evt);
+    }
+    function OnFolderChanging(func) {
+      $(window).on(FOLDER_CHANGING_EVENT, func);
+    }
+
+    var FOLDER_CHANGED_EVENT = 'folderchanged';
+    function FolderChanged(folder) {
+      var evt = $.Event(FOLDER_CHANGED_EVENT);
+      evt.Folder = folder;
+      $(window).trigger(evt);
+    }
+    function OnFolderChanged(func) {
+      $(window).on(FOLDER_CHANGED_EVENT, func);
+    }
+</script>
+
+<div class="ide">
+  <div id="folder-div" class="ide-left-pane collapse in">
     <div class="panel panel-info">
       <div class="panel-heading">
-        Files and Folders
+        <h5>
+          Files and Folders
+          <a class="visible-xs pull-right toggle-button" data-toggle="collapse" data-target="#folder-div">
+            <span class="sr-only">Close file list</span>
+            <span class="fa fa-close"></span>
+          </a>
+        </h5>
       </div>
-      <div id="folder-div" class="panel-body full-height" style="padding:0;">
-        <div class="btn-group-xs btn-group-vertical" style="width:100%;height:100%;overflow:auto;">
-          @ShowFolder(Model.Folder)
-        </div>
+      <div class="panel-body full-height">
+        <div id="file-list" class="ide-file-list list-group full-height-overflow"></div>
       </div>
     </div>
   </div>
-  <div class="col-xs-8 col-sm-9 col-md-10" style="padding-right:10px">
+  <div class="ide-right-pane">
+    <div class="ide-horizontal-splitter full-height bg-info hidden-xs">
+      <a data-target="#folder-div"><span class="sr-only">Toggle file list</span></a>
+    </div>
     <div class="panel panel-info">
       <div class="panel-heading">
-        Selected File: <span id="file-name"></span>
+        <h5>
+          Selected File: <span id="file-name"></span>
+          <a class="visible-xs pull-right toggle-button" data-toggle="collapse" data-target="#folder-div">
+            <span class="sr-only">Open file list</span>
+            <span class="fa fa-folder-open-o"></span>
+          </a>
+        </h5>
       </div>
       <div class="panel-body" style="padding:0;">
-        <ul class="nav nav-tabs" id="viewTabs">
-          <li class="active"><a data-toggle="tab" id="tabBrowser" href="#paneBrowser">Browser</a></li>
-          <li class=""><a data-toggle="tab" id="tabSource" href="#paneSource">Source</a></li>
-          <li class="pull-right btn-group btn-group-sm" style="padding:4px;">
+        <div id="display-file-supported">
+          <div class="pull-right btn-group btn-group-sm" style="padding:4px;">
             <a class="btn btn-primary" role="button" id="buttonOpenInNewWindow" target="_blank" href="#"><i class="fa fa-external-link"></i>&nbsp;Pop Out</a>
-          </li>
-        </ul>
-        <div class="tab-content" style="padding:0;background-color:#fff;">
-          <div class="tab-pane active" id="paneBrowser">
-            <div class="full-height">
-              <iframe id="browser" style="width:100%;height:100%;border:0;"></iframe>
+          </div>
+          <div class="pull-right btn-group btn-group-sm" style="padding:4px;">
+            <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <i class="fa fa-window-maximize"></i> Size <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+              <li><a class="preview-size" data-size="full">Full Width</a>
+              <li><a class="preview-size" data-size="tablet-l"><i class="fa fa-tablet fa-rotate-90"></i> Tablet (landscape)</a>
+              <li><a class="preview-size" data-size="tablet-p"><i class="fa fa-tablet"></i> Tablet (portrait)</a>
+              <li><a class="preview-size" data-size="mobile-l"><i class="fa fa-mobile-phone fa-rotate-90"></i> Phone (landscape)</a>
+              <li><a class="preview-size" data-size="mobile-p"><i class="fa fa-mobile-phone"></i> Phone (portrait)</a>
+            </ul>
+          </div>
+          <ul class="nav nav-tabs" id="viewTabs">
+            <li class="active"><a data-toggle="tab" id="tabBrowser" href="#paneBrowser">Browser</a></li>
+            <li class=""><a data-toggle="tab" id="tabSource" href="#paneSource">Source</a></li>
+          </ul>
+          <div class="tab-content bg-primary" style="padding:0;">
+            <div class="tab-pane active" id="paneBrowser">
+              <div class="full-height">
+                <iframe id="browser" style="display:block;margin:auto;background-color:white;"></iframe>
+              </div>
+            </div>
+            <div class="tab-pane" id="paneSource">
+              <div class="full-height">
+                <div id="editor"></div>
+              </div>
             </div>
           </div>
-          <div class="tab-pane" id="paneSource">
-            <div class="full-height">
-              <div id="editor" style="width:100%;height:100%;"></div>
-            </div>
+        </div>
+        <div id="display-file-unsupported" class="full-height text-center">
+          <div class="full-height-overflow">
+            <h1>Cannot Display File</h1>
+            <h2>This file exists, but Auger doesn't know how to display it.</h2>
+            <span class="fa fa-question-circle-o" style="font-size: 200px"></span>
           </div>
         </div>
       </div>
@@ -44,36 +110,212 @@
   </div>
 </div>
 
-@helper ShowFolder(SubmissionFolder folder, string path = "", int level = 0)
-{
-  foreach (var subfolder in folder.Folders)
-  {
-    var id = Guid.NewGuid().ToString();
+<script src="~/Scripts/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+<script>
 
-    <a href="#@id" class="btn" role="button" data-toggle="collapse">
-      <div class="text-left" style="overflow:hidden;text-overflow:ellipsis;">
-        @for (int i = 0; i < level; i++)
-        { <text>&nbsp;&nbsp;</text> }
-        <i class="fa fa-folder-open"></i>&nbsp;@subfolder.Name
-      </div>
-    </a>
-    <div class="collapse" id="@id">
-      <div class="btn-group-xs btn-group-vertical" style="width: 100%;">
-        @ShowFolder(subfolder, path + "/" + subfolder.Name, level + 1)
-      </div>
+  var browserOnlyExts = ['jpg', 'jpeg', 'png', 'gif'];
+  var sourceOnlyExts = ['css', 'js', 'txt'];
+  var supportedExts = ['html', 'htm'].concat(browserOnlyExts, sourceOnlyExts);
+  var sourceModes = {};
+  sourceModes['css'] = 'ace/mode/css';
+  sourceModes['js'] = 'ace/mode/javascript';
+  sourceModes['html'] = 'ace/mode/html';
+  sourceModes['htm'] = 'ace/mode/html';
+  var defaultSourceMode = 'ace/mode/html';
+  var sourceHref = '';
+  var browseRoot = '@ViewBag.BrowseRoot';
+
+  var _previewSizes = {
+    'full': { previewWidth: '100%' },
+    'tablet-l': { previewWidth: '1024px' },
+    'tablet-p': { previewWidth: '768px' },
+    'mobile-l': { previewWidth: '640px' },
+    'mobile-p': { previewWidth: '360px' }
+  }
+  var _previewSize;
+
+  var _setPreviewSize = function (newSize) {
+    if (!!_previewSizes[newSize]) {
+      $('#browser').css('width', _previewSizes[newSize].previewWidth);
+    }
+  }
+
+  $('.preview-size').click(function () {
+    $('a.preview-size').removeClass('selected');
+    $(this).addClass('selected');
+    _setPreviewSize($(this).data('size'));
+    $(window).resize();
+  });
+  $('.preview-size').first().click();
+
+  $(function () {
+    $('#folder-div').on('shown.bs.collapse', function () {
+      // HACK: insure correct size on mobile after show or hide folders
+      $(window).resize();
+    });
+
+    $('#folder-div').on('hidden.bs.collapse', function () {
+      // HACK: insure correct size on mobile after show or hide folders
+      $(window).resize();
+    });
+
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+      $(window).resize();
+      // HACK: insure folders are initially hidden on mobile
+      if ($(window).innerWidth() < 768) {
+        $('#folder-div').collapse('hide');
+      }
+      // HACK: insure source is loaded into visible code editor
+      if (e.target.id === 'tabSource') {
+        loadSource();
+      }
+    });
+
+    $('.ide-horizontal-splitter a').click(function () {
+      var $ide = $(this).closest('.ide');
+      if ($(this).hasClass('collapsed')) {
+        $ide.find('.ide-right-pane').css('width', '99.99%');
+        $ide.find('.ide-right-pane').animate({ width: '80%' }, 250);
+        $ide.find('.ide-left-pane').animate({ width: '20%' }, 250);
+        $(this).removeClass('collapsed');
+      } else {
+        $ide.find('.ide-left-pane').animate({ width: '0' }, 250);
+        $ide.find('.ide-right-pane').animate({ width: '100%' }, 250);
+        $(this).addClass('collapsed');
+      }
+    });
+
+    $('#browser').load(function () {
+      var href = $('#browser')[0].contentWindow.location.href;
+      $('#buttonOpenInNewWindow').attr('href', href);
+      var path = href.split(browseRoot)[1];
+      var parts = path.split('.');
+      var ext = parts[parts.length - 1];
+      if (sourceModes[ext] == undefined) {
+        editor.getSession().setMode(defaultSourceMode);
+      } else {
+        editor.getSession().setMode(sourceModes[ext]);
+      }
+      loadSource();
+    });
+
+    $('body').on('click', '.ide-file-list a.file', function () {
+      if ($(window).innerWidth() < 768) {
+        $('#folder-div').collapse('hide');
+      }
+
+      $('.ide-file-list a.file').removeClass('list-group-item-success');
+      $(this).addClass('list-group-item-success');
+
+      var path = $(this).data('path');
+      $('#file-name').html(path);
+      var parts = path.split('.');
+      var ext = parts[parts.length - 1];
+
+      if (supportedExts.indexOf(ext) > -1) {
+        $('#display-file-supported').show();
+        $('#display-file-unsupported').hide();
+
+        $('#tabSource').show();
+        $('#tabBrowser').show();
+        $('#tabBrowser').tab('show');
+
+        if (browserOnlyExts.indexOf(ext) > -1) {
+          $('#tabSource').hide();
+        }
+        if (sourceOnlyExts.indexOf(ext) > -1) {
+          $('#tabSource').tab('show');
+          $('#tabBrowser').hide();
+        }
+        $('#browser').attr('src', browseRoot + path);
+      } else {
+        $('#display-file-supported').hide();
+        $('#display-file-unsupported').show();
+      }
+      return false;
+    });
+  });
+
+  function loadSource() {
+    var href = $('#browser')[0].contentWindow.location.href;
+    if (sourceHref !== href) {
+      editor.setValue('UNABLE TO LOAD PAGE SOURCE');
+      getFile(href, function (text) {
+        editor.setValue(text);
+        editor.gotoLine(0);
+        sourceHref = href;
+      });
+    }
+  }
+
+  var editor = ace.edit('editor');
+  $(window).on('resize', function () {
+    editor.resize();
+  }, 100);
+  editor.setReadOnly(true);
+  editor.setTheme('ace/theme/@acetheme');
+  editor.setFontSize(16);
+  editor.getSession().setMode(defaultSourceMode);
+  editor.setValue('UNABLE TO LOAD PAGE SOURCE');
+
+  var getFile = function (url, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        callback(xhr.responseText, url);
+      }
+    }
+    xhr.send();
+  };
+
+  OnFolderChanging(function () {
+    $('#file-list').empty();
+    showLoadingDiv($('#file-list'));
+  });
+
+  OnFolderChanged(function (e) {
+    var template = $("#folder-template").html();
+    processFolder(e.Folder, '', 0);
+    var rendered = Mustache.render(template, e.Folder, { 'folder': template });
+    $('#file-list').html(rendered);
+
+    hideLoadingDiv($('#file-list'));
+    sourceHref = '';
+    $('#file-default').click();
+  });
+
+  function processFolder(folder, path, level) {
+    for (var i = 0; i < folder.Folders.length; i++) {
+      var sub = folder.Folders[i];
+      sub.Id = createGuid();
+      sub.Path = path;
+      sub.Level = level;
+      processFolder(sub, path + '/' + sub.Name, level + 1);
+    }
+    for (var i = 0; i < folder.Files.length; i++) {
+      var file = folder.Files[i];
+      file.Id = path.length == 0 && i == 0 ? 'file-default' : '';
+      file.Path = path + '/' + file.Name;
+      file.Level = level;
+    }
+  }
+</script>
+
+<script type="text/template" id="folder-template">
+  {{#Folders}}
+  <a class="list-group-item folder level-{{Level}} collapsed" data-toggle="collapse" data-target="#{{Id}}">
+    {{Name}}
+  </a>
+  <div class="collapse" id="{{Id}}">
+    <div class="btn-group-xs btn-group-vertical">
+      {{>folder}}
     </div>
-  }
-  foreach (var file in folder.Files)
-  {
-    var first = path.Length == 0 && file == folder.Files.FirstOrDefault();
-    var id = first ? "buttonDefaultFile" : "";
-
-    <a href="@(path + "/" + file.Name)" class="btn text-left file-button" role="button" id="@id">
-      <div class="text-left" style="overflow:hidden;text-overflow:ellipsis;">
-        @for (int i = 0; i < level; i++)
-        { <text>&nbsp;&nbsp;</text> }
-        <i class="fa fa-file"></i>&nbsp;@file.Name
-      </div>
-    </a>
-  }
-}
+  </div>
+  {{/Folders}}
+  {{#Files}}
+  <a data-path="{{Path}}" class="list-group-item file file-{{Type}} level-{{Level}}" id="{{Id}}">
+    {{Name}}
+  </a>
+  {{/Files}}
+</script>

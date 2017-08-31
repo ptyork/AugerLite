@@ -5,6 +5,8 @@ namespace Auger.Models.View
     public class UserProfileModel
     {
         public string UserId { get; set; }
+        public string UserName { get; set; }
+
 
         [Display(Name = "Email address"), DataType(DataType.EmailAddress)]
         public string Email { get; set; }
@@ -12,16 +14,11 @@ namespace Auger.Models.View
         [Display(Name = "First name")]
         public string FirstName { get; set; }
 
-        [Display(Name = "Student")]
-        public bool IsStudent { get; set; }
-
-        [Display(Name = "Teacher")]
-        public bool IsTeacher { get; set; }
-
         [Display(Name = "Last name")]
         public string LastName { get; set; }
 
-        public string UserName { get; set; }
+        [Display(Name = "Preferred Theme")]
+        public string Theme { get; set; }
 
         public UserProfileModel()
         {
@@ -34,6 +31,7 @@ namespace Auger.Models.View
             FirstName = user.FirstName;
             LastName = user.LastName;
             UserName = user.UserName;
+            Theme = user.Theme;
         }
     }
 }

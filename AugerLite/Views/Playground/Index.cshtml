@@ -1,0 +1,193 @@
+﻿@using Auger.Models;
+@model PlaygroundIndexViewModel
+@{
+    ViewBag.Title = "Playgrounds";
+}
+
+@section Breadcrumbs {
+  <li><a href="~/">Auger Home</a>
+  <li><a href="~/Playground/SelectCourse">@Model.Course.ShortName</a>
+  <li>Playgrounds
+}
+
+<div class="visible-xs">
+  Sorry. Editing is not supported on this device.
+</div>
+<div class="hidden-xs">
+  <div class="btn-group pull-right">
+    <button id="button-new-playground" type="button" class="btn btn-success"><i class="fa fa-plus"></i> New Playground</button>
+  </div>
+
+  <h3>All Playgrounds</h3>
+
+  <div class="clearfix"></div>
+  <div>
+    @if (Model.Playgrounds.Any())
+    {
+      foreach (var playground in Model.Playgrounds)
+      {
+        <div class="col-xs-12 col-sm-4 col-md-3" style="padding:5px">
+          <div class="btn btn-primary playground" data-id="@playground.PlaygroundId" style="width:100%">
+            <h4><i class="fa fa-folder-open-o" style="margin-right:10px"></i>@playground.Name</h4>
+            <table align="center" class="small">
+              <tr>
+                <th class="text-right">Created:</th>
+                <td class="text-left" style="padding-left:5px;">@playground.CreationDate.ToString()</td>
+              </tr>
+              <tr>
+                <th class="text-right">Updated:</th>
+                <td class="text-left" style="padding-left:5px;">@playground.UpdateDate.ToString()</td>
+              </tr>
+            </table>
+            <div class="btn-group btn-group-xs pull-right" style="margin-top:5px;">
+              <button type="button" class="button-rename-playground btn btn-default" data-id="@playground.PlaygroundId" data-name="@playground.Name"><i class="fa fa-edit"></i> Rename...</button>
+              <button type="button" class="button-delete-playground btn btn-warning" data-id="@playground.PlaygroundId" data-name="@playground.Name"><i class="fa fa-close"></i> Delete</button>
+            </div>
+          </div>
+        </div>
+      }
+    }
+    else
+    {
+        <p>No Playgrounds Found</p>
+    }
+  </div>
+
+  <div class="clearfix"></div>
+</div>
+
+
+<div id="new-playground-modal" class="modal fade">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">New Playground</h4>
+      </div>
+      <div class="modal-body row">
+        <form onsubmit="$('#new-playground-confirm-button').click(); return false;">
+          <div id="new-playground-name-group" class="form-group">
+            <label for="new-playground-name" class="control-label">Name <i>(optional)</i></label>
+            <input id="new-playground-name" type="text" class="form-control" />
+            <span class="fa fa-remove form-control-feedback" aria-hidden="true"></span>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button id="new-playground-confirm-button" type="button" class="btn btn-success">Create</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="rename-playground-modal" class="modal fade">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title">Rename Playground</h4>
+      </div>
+      <div class="modal-body row">
+        <form onsubmit="$('#rename-playground-confirm-button').click(); return false;">
+          <div id="rename-playground-name-group" class="form-group">
+            <label for="rename-playground-name" class="control-label">New Name</label>
+            <input id="rename-playground-name" type="text" class="form-control" />
+            <span class="fa fa-remove form-control-feedback" aria-hidden="true"></span>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button id="rename-playground-confirm-button" type="button" class="btn btn-success">Rename</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="delete-playground-modal" class="modal alert-warning fade">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title"><i class="fa fa-exclamation-triangle"></i> Delete Playground</h4>
+      </div>
+      <div class="modal-body row">
+        <p>
+          Are you sure you wish to delete <span id="delete-playground-name"></span>?
+          This cannot be undone.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button id="delete-playground-confirm-button" type="button" class="btn btn-warning">Delete</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  $('#button-new-playground').click(function () {
+    $('#new-playground-modal form')[0].reset();
+    $('#new-playground-modal').modal('show');
+  })
+
+  $('#new-playground-modal').on('shown.bs.modal', function () {
+    $('#new-playground-name').focus();
+  });
+
+  $('#new-playground-confirm-button').click(function () {
+    var name = $('#new-playground-name').val().trim();
+    var uri = '@Url.Content("~/Playground/Create")';
+    $('<form>').attr('method', 'post').attr('action', uri).attr('target', '_top')
+      .append($('<input>').attr('name', 'name').attr('value', name).attr('type', 'hidden'))
+      .appendTo('body')
+      .submit();
+  })
+
+  $(document).on('click', '.playground', function () {
+    var id = $(this).data('id');
+    window.location = '@Url.Content("~/Playground/Edit")/' + id;
+  })
+
+  $(document).on('click', '.button-rename-playground', function (e) {
+    $('#rename-playground-name').val($(this).data('name'));
+    $('#rename-playground-confirm-button').data('id', $(this).data('id'));
+    $('#rename-playground-modal').modal('show');
+    return false;
+  })
+
+  $('#rename-playground-modal').on('shown.bs.modal', function () {
+    $('#rename-playground-name').focus();
+  });
+
+  $('#rename-playground-confirm-button').click(function () {
+    var id = $(this).data('id');
+    var name = $('#rename-playground-name').val().trim();
+    var uri = '@Url.Content("~/Playground/Rename")/' + id;
+    $('<form>').attr('method', 'post').attr('action', uri).attr('target','_top')
+      .append($('<input>').attr('name', 'name').attr('value', name).attr('type', 'hidden'))
+      .appendTo('body')
+      .submit();
+  })
+
+  $(document).on('click', '.button-delete-playground', function (e) {
+    $('#delete-playground-name').text($(this).data('name'));
+    $('#delete-playground-confirm-button').data('id', $(this).data('id'));
+    $('#delete-playground-modal').modal('show');
+    return false;
+  })
+
+  $('#delete-playground-confirm-button').click(function () {
+    var id = $(this).data('id');
+    var uri = encodeURI('@Url.Content("~/Playground/Delete")/' + id);
+    window.location = uri;
+  })
+
+</script>

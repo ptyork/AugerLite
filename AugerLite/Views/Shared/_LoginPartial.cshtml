@@ -10,7 +10,7 @@
         <i class="fa fa-user"></i> @User.Identity.Name <span class="caret"></span>
       </a>
       <ul class="dropdown-menu noclose">
-        <li><a href="~/User/Edit">User Profile</a></li>
+        <li><a href="~/User/EditSelf?returnUrl=@Html.Encode(Request.RawUrl)">User Profile</a></li>
         <li><a href="~/Manage/ManageLogins">Linked Logins</a></li>
         <li role="separator" class="divider"></li>
         <li><a href="javascript:document.getElementById('logoutForm').submit()">Log off</a></li>
@@ -20,7 +20,7 @@
 }
 else
 {
-  <ul class="nav navbar-nav navbar-right">
+  <ul class="nav navbar-nav navbar-right" style="margin:0">
     <li>@Html.ActionLink("Log in", "Login", "Account", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
   </ul>
 }

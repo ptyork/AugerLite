@@ -1,0 +1,60 @@
+﻿@model UserProfileModel
+
+<h2>Edit Profile Information</h2>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+
+    <div class="form-horizontal">
+        @Html.ValidationSummary("", new { @class = "text-danger" })
+        @Html.HiddenFor(model => model.UserId)
+        @Html.HiddenFor(model => model.UserName)
+        
+        <div class="form-group">
+            @Html.LabelFor(model => model.FirstName, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                @Html.TextBoxFor(model => model.FirstName, new { @class = "form-control" })
+                @Html.ValidationMessageFor(model => model.FirstName, "", new { @class = "text-danger" })
+            </div>
+        </div>
+        <div class="form-group">
+            @Html.LabelFor(model => model.LastName, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                @Html.TextBoxFor(model => model.LastName, new { @class = "form-control" })
+                @Html.ValidationMessageFor(model => model.LastName, "", new { @class = "text-danger" })
+            </div>
+        </div>
+        <div class="form-group">
+            @Html.LabelFor(model => model.Email, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                @Html.TextBoxFor(model => model.Email, new { @class = "form-control" })
+                @Html.ValidationMessageFor(model => model.Email, "", new { @class = "text-danger" })
+            </div>
+        </div>
+      @{
+          var themes = new List<SelectListItem>
+          {
+              new SelectListItem { Text = "DARK", Value = "dark" },
+              new SelectListItem { Text = "LIGHT", Value = "light" }
+          };
+      }
+      <div class="form-group">
+        @Html.LabelFor(model => model.Theme, new { @class = "col-md-2 control-label" })
+        <div class="col-md-10">
+          @Html.DropDownListFor(model => model.Theme, themes, new { @class = "form-control" })
+          @Html.ValidationMessageFor(model => model.Theme, "", new { @class = "text-danger" })
+        </div>
+      </div>
+        <div class="form-group">
+            <div class="col-md-offset-2 col-md-10">
+              <input type="submit" value="Save" class="btn btn-default" />
+              <input type="submit" value="Cancel" class="btn btn-cancel" />
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}

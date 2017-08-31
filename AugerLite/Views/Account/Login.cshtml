@@ -4,10 +4,10 @@
     ViewBag.Title = "Log in";
 }
 
-<ol class="breadcrumb">
+@section Breadcrumbs {
   <li><a href="~/">Auger Home</a>
   <li>Log in
-</ol>
+}
 
 <h2>@ViewBag.Title</h2>
 @if (!String.IsNullOrWhiteSpace(ViewBag.LoginError))

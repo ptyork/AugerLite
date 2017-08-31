@@ -26,8 +26,10 @@ namespace Auger
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
 
+            TemplateManager.Init(Server.MapPath("~/app_data/templates/"));
             SubmissionRepository.Init(Server.MapPath("~/app_data/repo/"));
             WorkRepository.Init(Server.MapPath("~/app_data/work/"));
+            PlaygroundRepository.Init(Server.MapPath("~/app_data/play/"));
             TempDir.Init(Server.MapPath("~/app_data/temp/"));
 
             //HostingEnvironment.RegisterVirtualPathProvider(new RepositoryVPP());
@@ -49,12 +51,12 @@ namespace Auger
 
         protected void Session_Start()
         {
-            TempDir.InitSession();
+            TempDir.InitSession(this.Session);
         }
 
         protected void Session_End()
         {
-            TempDir.EndSession();
+            TempDir.EndSession(this.Session);
         }
     }
 }

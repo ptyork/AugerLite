@@ -28,14 +28,14 @@ namespace Auger
             System.IO.Directory.CreateDirectory(_basePath);
         }
 
-        public static void InitSession()
+        public static void InitSession(HttpSessionState session)
         {
-            System.Web.HttpContext.Current.Session.Add(SESSION_KEY, new Dictionary<string, TempDir>());
+            session.Add(SESSION_KEY, new Dictionary<string, TempDir>());
         }
 
-        public static void EndSession()
+        public static void EndSession(HttpSessionState session)
         {
-            var tempDirs = System.Web.HttpContext.Current.Session[SESSION_KEY] as Dictionary<string, TempDir>;
+            var tempDirs = session[SESSION_KEY] as Dictionary<string, TempDir>;
             if (tempDirs != null)
             {
                 foreach (var tempDir in tempDirs.Values)
@@ -44,12 +44,12 @@ namespace Auger
                 }
                 tempDirs.Clear();
             }
-            System.Web.HttpContext.Current.Session.Remove(SESSION_KEY);
+            session.Remove(SESSION_KEY);
         }
 
         public static TempDir Get(Repository repo)
         {
-            string dirKey = $"{repo.CourseId}\\{repo.UserId}\\{repo.AssignmentId}";
+            string dirKey = $"{repo.CourseId}\\{repo.UserName}\\{repo.RepositoryId}";
 
             TempDir tempDir = null;
             var tempDirs = System.Web.HttpContext.Current.Session[SESSION_KEY] as Dictionary<string, TempDir>;
@@ -64,7 +64,7 @@ namespace Auger
             return tempDir;
         }
 
-        public static string GetPath(string courseId, string userId, string assignmentId)
+        public static string GetPath(int courseId, string userId, int assignmentId)
         {
             var sessionId = System.Web.HttpContext.Current.Session.SessionID;
             return $"{_basePath}\\{sessionId}\\{courseId}\\{userId}\\{assignmentId}";
@@ -82,10 +82,10 @@ namespace Auger
         public TempDir(Repository repo)
         {
             // init folder
-            _folderName = GetPath(repo.CourseId, repo.UserId, repo.AssignmentId);
+            _folderName = GetPath(repo.CourseId, repo.UserName, repo.RepositoryId);
             _dir = System.IO.Directory.CreateDirectory(_folderName);
             DeleteContent();
-            _CopyFolder(repo.Directory, _dir);
+            repo.Folder.CopyTo(_dir);
             _commitId = repo.CurrentCommitId;
         }
 
@@ -138,21 +138,6 @@ namespace Auger
                     file.Delete();
                 }
             });
-        }
-
-        private static void _CopyFolder(DirectoryInfo source, DirectoryInfo target)
-        {
-            foreach (var dir in source.GetDirectories())
-            {
-                if (!dir.Attributes.HasFlag(FileAttributes.Hidden))
-                {
-                    _CopyFolder(dir, target.CreateSubdirectory(dir.Name));
-                }
-            }
-            foreach (var file in source.GetFiles())
-            {
-                file.CopyTo(Path.Combine(target.FullName, file.Name));
-            }
         }
 
         private static void _Retry(Action func)

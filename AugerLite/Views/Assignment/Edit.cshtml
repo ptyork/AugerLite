@@ -1,0 +1,35 @@
+﻿@model AssignmentEditViewModel
+@{
+    ViewBag.Title = "Edit Assignment";
+    ViewBag.BodyClass = "full";
+    ViewBag.CanSubmit = true;
+    ViewBag.SubmitRedirect = Url.Content($"~/Assignment/Details/{Model.Assignment.AssignmentId}");
+}
+
+@section Head {
+  <script>
+    var _basePath = '@Url.Content("~/Assignment/")';
+    var _browseRoot = '@Url.Content($"~/BrowseWork/{Model.Course.CourseId}/{Model.Assignment.AssignmentId}")';
+    var _baseDataObject = {
+      userName: '@User.GetName()',
+      courseId: @Model.Course.CourseId,
+      repositoryId: @Model.Assignment.AssignmentId,
+      assignmentId: @Model.Assignment.AssignmentId
+    };
+  </script>
+}
+
+@section Breadcrumbs {
+  <li><a href="~/">Auger Home</a>
+  <li><a href="~/Assignment/SelectCourse">@Model.Course.ShortName</a>
+  <li><a href="~/Assignment">Assignments</a>
+  <li><a href="~/Assignment/Details/@Model.Assignment.AssignmentId">@Model.Assignment.AssignmentName</a>
+  <li>Edit
+}
+
+<div class="visible-xs">
+  Sorry. Editing is not supported on this device.
+</div>
+<div class="hidden-xs">
+  @Html.Partial("_IDE")
+</div>

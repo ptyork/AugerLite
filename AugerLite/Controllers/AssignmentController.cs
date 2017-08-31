@@ -8,24 +8,15 @@ using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
+using System.Net;
 using System.Web;
 using System.Web.Mvc;
 
 namespace Auger.Controllers
 {
     [Authorize]
-    public class AssignmentController : Controller
+    public class AssignmentController : IDEControllerBase<WorkRepository>
     {
-        private AugerContext db = new AugerContext();
-
-        private Course _GetCourse()
-        {
-            var courseId = CookieManager.GetCourseId();
-            Course course = db.Courses.FirstOrDefault(c => c.CourseId == courseId);
-            // TODO: Retrieve course if only one for user
-            return course;
-        }
-
         public ActionResult Index()
         {
             Course course = _GetCourse();
@@ -39,7 +30,7 @@ namespace Auger.Controllers
 
             var user = ApplicationUser.Current;
 
-            var studentAssignments = db.StudentAssignments
+            var studentAssignments = _db.StudentAssignments
                 .Include(sa => sa.Submissions)
                 .Include(sa => sa.Assignment)
                 .Where(sa => sa.Enrollment.UserName == user.UserName && sa.Assignment.CourseId == course.CourseId)
@@ -71,7 +62,7 @@ namespace Auger.Controllers
             if (id == 0)
             {
                 var userName = User.GetName();
-                var courses = db.Enrollments
+                var courses = _db.Enrollments
                     .Where(e => e.UserName == userName)
                     .Select(e => e.Course)
                     .AsEnumerable();
@@ -88,10 +79,35 @@ namespace Auger.Controllers
 
         public ActionResult Details(int id)
         {
-            return SubmissionDetails(id, -1);
+            Course course = _GetCourse();
+            if (course == null)
+            {
+                return RedirectToAction("SelectCourse");
+            }
+
+            Assignment assignment = course.Assignments.FirstOrDefault(a => a.AssignmentId == id);
+            if (assignment == null)
+            {
+                return new HttpNotFoundResult();
+            }
+
+            ApplicationUser user = ApplicationUser.Current;
+
+            AssignmentDetailsViewModel vm = new AssignmentDetailsViewModel();
+            vm.User = user;
+            vm.Course = course;
+            vm.Assignment = assignment;
+
+            vm.Submissions = _db.StudentSubmissions
+                .Where(s => s.StudentAssignment.AssignmentId == id)
+                .Where(s => s.StudentAssignment.Enrollment.UserId == user.Id)
+                .OrderBy(s => s.DateCreated)
+                .ToList();
+
+            return View(vm);
         }
 
-        public ActionResult SubmissionDetails(int id, int submissionId)
+        public ActionResult Edit(int id)
         {
             Course course = _GetCourse();
             if (course == null)
@@ -105,122 +121,146 @@ namespace Auger.Controllers
                 return new HttpNotFoundResult();
             }
 
-            AssignmentDetailsViewModel vm = new AssignmentDetailsViewModel();
-            vm.Assignment = assignment;
-
             var user = ApplicationUser.Current;
 
-            var studentAssignment = db.StudentAssignments
+            var studentAssignment = _db.StudentAssignments
                 .Include(sa => sa.Submissions)
-                .Include(sa => sa.Assignment)
-                .Include(sa => sa.Enrollment.User)
                 .FirstOrDefault(sa => sa.AssignmentId == assignment.AssignmentId && sa.Enrollment.UserName == user.UserName);
-
-            vm.Submissions = studentAssignment.Submissions.OrderBy(s => s.DateCreated).ToList();
-
-            var selectedSubmission = vm.Submissions.LastOrDefault();
-
-            if (selectedSubmission != null && submissionId > 0)
+            if (studentAssignment == null)
             {
-                selectedSubmission = vm.Submissions.FirstOrDefault(s => s.StudentSubmissionId == submissionId);
-                if (selectedSubmission == null)
+                return new HttpNotFoundResult();
+            }
+
+            AssignmentEditViewModel vm = new AssignmentEditViewModel()
+            {
+                User = user,
+                Assignment = assignment,
+                Course = course,
+                Submissions = studentAssignment.Submissions.OrderBy(s => s.DateCreated).ToList()
+            };
+            return View(vm);
+        }
+
+        [HttpPost]
+        public ActionResult GetSubmissionDetails(SubmissionPostData data)
+        {
+            Course course = _GetCourse();
+            if (course == null || course.CourseId != data.CourseId)
+            {
+                return new HttpNotFoundResult();
+            }
+
+            var user = ApplicationUser.Current;
+            if (user == null || user.Id != data.UserId)
+            {
+                return new HttpNotFoundResult();
+            }
+
+            try
+            {
+                var submission = _db.StudentSubmissions
+                    .Where(ss => ss.StudentAssignment.Enrollment.UserId == user.Id)
+                    .Where(ss => ss.StudentAssignment.AssignmentId == data.AssignmentId)
+                    .Where(ss => ss.StudentSubmissionId == data.SubmissionId)
+                    .Include(ss => ss.StudentAssignment.Assignment)
+                    .Include(ss => ss.StudentAssignment.Enrollment)
+                    .FirstOrDefault();
+
+                if (submission == null)
                 {
                     return new HttpNotFoundResult();
                 }
-            }
 
-            if (selectedSubmission != null)
+                var repo = SubmissionRepository.Get(submission.StudentAssignment);
+                repo.Checkout(submission.CommitId); // get selected
+                var dir = TempDir.Get(repo);
+
+                var folder = dir.GetFolder();
+
+                return new JsonNetResult(new { Folder = folder, Results = submission.PreSubmissionResults });
+            }
+            catch (Exception ex)
             {
-                var repo = SubmissionRepository.Get(studentAssignment);
-                repo.CheckoutSubmission(selectedSubmission.CommitId);
-                var work = TempDir.Get(repo);
-                vm.SelectedSubmission = new SubmissionViewModel()
-                {
-                    Submission = selectedSubmission,
-                    Folder = SubmissionManager.GetFolder(selectedSubmission)
-                };
-                repo.CheckoutSubmission();
+                Elmah.ErrorSignal.FromCurrentContext().Raise(ex);
+                return new HttpStatusCodeResult(HttpStatusCode.InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpPost]
+        public ActionResult Submit(IDEPostData data)
+        {
+            var repo = _GetRepo(data);
+            if (repo == null)
+            {
+                return new HttpNotFoundResult();
+            }
+            try
+            {
+                // TODO: in the future manage issues with versions in this repo
+                var submission = SubmissionManager.Submit(repo);
+                return new JsonNetResult(submission);
+            }
+            catch (Exception ex)
+            {
+                Elmah.ErrorSignal.FromCurrentContext().Raise(ex);
+                return new HttpStatusCodeResult(HttpStatusCode.InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpPost]
+        public ActionResult RetestSubmission(SubmissionPostData data)
+        {
+            var course = _GetCourse();
+            if (course == null || course.CourseId != data.CourseId)
+            {
+                return new HttpNotFoundResult();
             }
 
-            return View("Details", vm);
-        }
-
-        [HttpPost]
-        public ActionResult Submit(SubmissionModel model, HttpPostedFileBase zipFile)
-        {
-            model.ZipFile = zipFile;
-            var results = SubmissionManager.Submit(model);
-            TempData["results"] = results;
-            return RedirectToAction("ViewAssignment", new { id = model.AssignmentId });
-        }
-
-        [Authorize]
-        public JsonResult SubmitAjax(SubmissionModel model)
-        {
-            var results = SubmissionManager.Submit(model);
-            return Json(results);
-        }
-
-        public class TestModel
-        {
-            public int CourseId { get; set; }
-            public int AssignmentId { get; set; }
-            public int SubmissionId { get; set; }
-        }
-
-        [HttpPost]
-        public JsonResult TestAjax(TestModel model)
-        {
-            var results = _Test(model.CourseId, model.AssignmentId, model.SubmissionId);
-            return Json(results);
-        }
-
-        private TestResults _Test(int courseId, int assignmentId, int submissionId)
-        {
             var user = ApplicationUser.Current;
-
-            var assignment = db.Assignments.FirstOrDefault(a => a.CourseId == courseId && a.AssignmentId == assignmentId);
-
-            var studentAssignment = db.StudentAssignments
-                .Include(sa => sa.Submissions)
-                .Include(sa => sa.Assignment.Pages)
-                .Include(sa => sa.Enrollment.User)
-                .FirstOrDefault(sa => sa.AssignmentId == assignmentId && sa.Enrollment.UserName == user.UserName);
-
-            if (studentAssignment == null)
+            if (user == null || user.Id != data.UserId)
             {
-                return null;
+                return new HttpUnauthorizedResult();
             }
 
-            StudentSubmission submission;
-            if (submissionId > 0)
+            try
             {
-                submission = studentAssignment.Submissions.FirstOrDefault(s => s.StudentSubmissionId == submissionId);
+                var studentAssignment = _db.StudentAssignments
+                    .Include(sa => sa.Submissions)
+                    .Include(sa => sa.Assignment.Pages)
+                    .Include(sa => sa.Enrollment.User)
+                    .FirstOrDefault(sa => sa.AssignmentId == data.AssignmentId && sa.Enrollment.UserName == user.UserName);
+
+                if (studentAssignment == null)
+                {
+                    return new HttpNotFoundResult();
+                }
+
+                StudentSubmission submission;
+                if (data.SubmissionId > 0)
+                {
+                    submission = studentAssignment.Submissions.FirstOrDefault(s => s.StudentSubmissionId == data.SubmissionId);
+                }
+                else
+                {
+                    submission = studentAssignment.Submissions.LastOrDefault();
+                }
+
+                if (submission == null)
+                {
+                    return null;
+                }
+
+                SubmissionTester.TestSubmission(submission);
+                //db.Entry(submission).State = EntityState.Modified;
+                _db.SaveChanges();
+
+                return new JsonNetResult(submission.PreSubmissionResults);
             }
-            else
+            catch (Exception ex)
             {
-                submission = studentAssignment.Submissions.LastOrDefault();
+                Elmah.ErrorSignal.FromCurrentContext().Raise(ex);
+                return new HttpStatusCodeResult(HttpStatusCode.InternalServerError, ex.Message);
             }
-
-            if (submission == null)
-            {
-                return null;
-            }
-
-            SubmissionTester.TestSubmission(submission);
-            //db.Entry(submission).State = EntityState.Modified;
-            db.SaveChanges();
-
-            return submission.PreSubmissionResults;
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                db.Dispose();
-            }
-            base.Dispose(disposing);
         }
     }
 }

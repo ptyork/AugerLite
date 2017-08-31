@@ -14,10 +14,8 @@ using Auger.Models;
 
 namespace Auger.Controllers
 {
-    public class CourseAdminController : Controller
+    public class CourseAdminController : AugerControllerBase
     {
-        private AugerContext _db = new AugerContext();
-
         // GET: CourseAdmin
         [Authorize]
         public ActionResult Index()
@@ -25,7 +23,9 @@ namespace Auger.Controllers
             List<Course> courses = null;
             if (User.IsInRole(UserRoles.SuperUserRole))
             {
-                courses = _db.Courses.ToList();
+                courses = _db.Courses
+                    .OrderByDescending(c => c.DateCreated)
+                    .ToList();
             }
             else
             {
@@ -110,7 +110,7 @@ namespace Auger.Controllers
         [Authorize]
         public ActionResult CourseLink()
         {
-            var ltiContext = TempData["ltiContext"] as LtiContextModel;
+            var ltiContext = Session["ltiContext"] as LtiContextModel;
             var user = ApplicationUser.Current;
             var unlinkedCourses = _db.Enrollments.Where(e => e.UserId == user.Id && e.Course.LtiContextId == null).Select(e => e.Course);
 
@@ -135,10 +135,10 @@ namespace Auger.Controllers
             else
             {
                 var course = _db.Courses.Find(courseId);
-                var ltiContext = TempData["ltiContext"] as LtiContextModel;
+                var ltiContext = Session["ltiContext"] as LtiContextModel;
                 if (course == null || ltiContext == null)
                 {
-                    // TODO: Do better error handling here
+                    Elmah.ErrorSignal.FromCurrentContext().Raise(new Exception("Cannot link course and context"));
                     return HttpNotFound();
                 }
 
@@ -147,8 +147,14 @@ namespace Auger.Controllers
 
                 CookieManager.SetCourseId(course.CourseId);
 
-                // TODO: Handle new assignment
-                return RedirectToAction("CourseDetails", new { courseId = course.CourseId });
+                if (string.IsNullOrWhiteSpace(ltiContext.LtiResourceLinkId))
+                {
+                    return RedirectToAction("CourseDetails", new { courseId = course.CourseId });
+                }
+                else
+                {
+                    return RedirectToAction("AssignmentCreate", new { courseId = course.CourseId });
+                }
             }
         }
 
@@ -158,7 +164,7 @@ namespace Auger.Controllers
         {
             var course = new Course();
 
-            var ltiContext = TempData["ltiContext"] as LtiContextModel;
+            var ltiContext = Session["ltiContext"] as LtiContextModel;
             if (ltiContext != null && !ltiContext.IsCourseLinked)
             {
                 course.LtiContextId = ltiContext.LtiContextId;
@@ -175,7 +181,7 @@ namespace Auger.Controllers
         [Authorize]
         public ActionResult CourseCreate(Course course)
         {
-            var ltiContext = TempData["ltiContext"] as LtiContextModel;
+            var ltiContext = Session["ltiContext"] as LtiContextModel;
 
             if (ModelState.IsValid)
             {
@@ -202,13 +208,13 @@ namespace Auger.Controllers
                 _db.Enrollments.Add(e);
                 _db.SaveChanges();
 
-                if (ltiContext != null && !ltiContext.IsAssignmentLinked)
+                if (string.IsNullOrWhiteSpace(ltiContext?.LtiResourceLinkId))
                 {
-                    return RedirectToAction("AssignmentCreate", new { courseId = course.CourseId });
+                    return RedirectToAction("CourseDetails", new { courseId = course.CourseId });
                 }
                 else
                 {
-                    return RedirectToAction("CourseDetails", new { courseId = course.CourseId });
+                    return RedirectToAction("AssignmentCreate", new { courseId = course.CourseId });
                 }
             }
 
@@ -313,7 +319,9 @@ namespace Auger.Controllers
         [CourseAuthorize(UserRoles.InstructorRole)]
         public ActionResult AssignmentLink(int courseId)
         {
-            var unlinkedAssignments = _db.Assignments.Where(a => a.CourseId == courseId && a.LtiResourceLinkId == null);
+            var unlinkedAssignments = _db.Assignments
+                .Where(a => a.CourseId == courseId && a.LtiResourceLinkId == null)
+                .Include(a => a.Course);
             if (!unlinkedAssignments.Any())
             {
                 return HttpNotFound();
@@ -335,7 +343,7 @@ namespace Auger.Controllers
             else
             {
                 var assignment = _db.Assignments.Find(assignmentId);
-                var ltiContext = TempData["ltiContext"] as LtiContextModel;
+                var ltiContext = Session["ltiContext"] as LtiContextModel;
                 if (assignment == null || ltiContext == null)
                 {
                     // TODO: Do better error handling here
@@ -359,12 +367,19 @@ namespace Auger.Controllers
             if (!IsCurrentCourse(courseId))
                 return RedirectToCourse(courseId);
 
+            Course course = _db.Courses.Find(courseId);
+            if (course == null)
+            {
+                return HttpNotFound();
+            }
+
             var assignment = new Assignment
             {
+                Course = course,
                 CourseId = courseId.Value
             };
 
-            var ltiContext = TempData["ltiContext"] as LtiContextModel;
+            var ltiContext = Session["ltiContext"] as LtiContextModel;
             if (ltiContext != null && !ltiContext.IsAssignmentLinked)
             {
                 assignment.LtiResourceLinkId = ltiContext.LtiResourceLinkId;
@@ -396,7 +411,7 @@ namespace Auger.Controllers
                 }
                 _db.SaveChanges();
 
-                var ltiContext = TempData["ltiContext"] as LtiContextModel;
+                var ltiContext = Session["ltiContext"] as LtiContextModel;
                 if (ltiContext != null && !ltiContext.IsAssignmentLinked)
                 {
                     ltiContext.IsAssignmentLinked = true;
@@ -416,7 +431,10 @@ namespace Auger.Controllers
             if (!IsCurrentCourse(courseId))
                 return RedirectToCourse(courseId);
 
-            Assignment assignment = _db.Assignments.Find(id);
+            Assignment assignment = _db.Assignments
+                .Where(a => a.AssignmentId == id)
+                .Include(a => a.Course)
+                .FirstOrDefault();
             if (assignment == null)
             {
                 return HttpNotFound();
@@ -454,7 +472,10 @@ namespace Auger.Controllers
             if (!IsCurrentCourse(courseId))
                 return RedirectToCourse(courseId);
 
-            Assignment assignment = _db.Assignments.Find(id);
+            Assignment assignment = _db.Assignments
+                .Where(a => a.AssignmentId == id)
+                .Include(a => a.Course)
+                .FirstOrDefault();
             if (assignment == null)
             {
                 return HttpNotFound();
@@ -559,7 +580,6 @@ namespace Auger.Controllers
 
             Page page = _db.Pages
                 .Include(a => a.AllScripts)
-                .Include(a => a.Assignment)
                 .Include(a => a.Assignment.Course)
                 .FirstOrDefault(a => a.PageId == id);
             if (page == null)
@@ -579,8 +599,18 @@ namespace Auger.Controllers
             if (!IsCurrentCourse(courseId))
                 return RedirectToCourse(courseId);
 
+            Assignment assignment = _db.Assignments
+                .Where(a => a.AssignmentId == id)
+                .Include(a => a.Course)
+                .FirstOrDefault();
+            if (assignment == null || assignment.CourseId != courseId)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+
             var page = new Page
             {
+                Assignment = assignment,
                 AssignmentId = id.Value
             };
             return View(page);
@@ -612,7 +642,9 @@ namespace Auger.Controllers
             if (!IsCurrentCourse(courseId))
                 return RedirectToCourse(courseId);
 
-            Page page = _db.Pages.Find(id);
+            Page page = _db.Pages
+                .Include(a => a.Assignment.Course)
+                .FirstOrDefault(a => a.PageId == id);
             if (page == null)
             {
                 return HttpNotFound();
@@ -649,7 +681,9 @@ namespace Auger.Controllers
             if (!IsCurrentCourse(courseId))
                 return RedirectToCourse(courseId);
 
-            Page page = _db.Pages.Find(id);
+            Page page = _db.Pages
+                .Include(a => a.Assignment.Course)
+                .FirstOrDefault(a => a.PageId == id);
             if (page == null)
             {
                 return HttpNotFound();
@@ -768,9 +802,9 @@ namespace Auger.Controllers
 
         #region ////////////////// STUDENTASSIGNMENT ///////////////////
 
-        // GET: CourseAdmin/StudentAssignmentDetails/5/6
+        // GET: CourseAdmin/StudentAssignmentDetails/{courseId}/{studentAssignmentId}
         [CourseAuthorize(UserRoles.InstructorRole)]
-        public ActionResult StudentAssignmentDetails(int? courseId, int? id, int? selectedId = null)
+        public ActionResult StudentAssignmentDetails(int? courseId, int? id)
         {
             if (courseId == null || id == null)
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
@@ -780,31 +814,11 @@ namespace Auger.Controllers
             var studentAssignment = _db.StudentAssignments
                 .Include(sa => sa.Assignment.Course)
                 .Include(sa => sa.Submissions)
-                .Include(sa => sa.Enrollment)
+                .Include(sa => sa.Enrollment.User)
                 .FirstOrDefault(sa => sa.StudentAssignmentId == id);
             if (studentAssignment == null)
             {
                 return HttpNotFound();
-            }
-
-            StudentSubmission submission = studentAssignment.Submissions.LastOrDefault();
-            if (selectedId.HasValue)
-            {
-                submission = studentAssignment.Submissions.FirstOrDefault(s => s.StudentSubmissionId == selectedId);
-            }
-
-            SubmissionViewModel svm = null;
-            if (submission != null)
-            {
-                var repo = SubmissionRepository.Get(studentAssignment);
-                repo.CheckoutSubmission(submission.CommitId);
-                var work = TempDir.Get(repo);
-                svm = new SubmissionViewModel
-                {
-                    Submission = submission,
-                    Folder = SubmissionManager.GetFolder(submission)
-                };
-                repo.CheckoutSubmission();
             }
 
             var allAssignments = _db.StudentAssignments
@@ -816,46 +830,112 @@ namespace Auger.Controllers
             var vm = new StudentAssignmentDetailsViewModel
             {
                 StudentAssignment = studentAssignment,
-                SelectedSubmission = svm,
                 AllAssignments = allAssignments
             };
 
             return View(vm);
         }
 
-        // POST: Grade/RetestSubmission/courseId/submissionId
         [HttpPost]
         [CourseAuthorize(UserRoles.InstructorRole)]
-        public ActionResult RetestSubmission(int? courseId, int? id)
+        public ActionResult GetSubmissionDetails(SubmissionPostData data)
         {
-            if (courseId == null || id == null)
-                return Json(false);
-            if (!IsCurrentCourse(courseId))
-                return Json(false);
+            Course course = _GetCourse();
+            if (course == null || course.CourseId != data.CourseId)
+            {
+                return new HttpNotFoundResult();
+            }
+
+            var user = ApplicationUser.FromUserId(data.UserId);
+            if (user == null)
+            {
+                return new HttpNotFoundResult();
+            }
 
             try
             {
                 var submission = _db.StudentSubmissions
-                    .Include(ss => ss.StudentAssignment.Assignment.Pages)
-                    .Include(ss => ss.StudentAssignment.Enrollment.User)
-                    .FirstOrDefault(ss => ss.StudentSubmissionId == id);
+                    .Where(ss => ss.StudentAssignment.Enrollment.UserId == user.Id)
+                    .Where(ss => ss.StudentAssignment.AssignmentId == data.AssignmentId)
+                    .Where(ss => ss.StudentSubmissionId == data.SubmissionId)
+                    .Include(ss => ss.StudentAssignment.Assignment)
+                    .Include(ss => ss.StudentAssignment.Enrollment)
+                    .FirstOrDefault();
 
                 if (submission == null)
-                    return Json(false);
+                {
+                    return new HttpNotFoundResult();
+                }
 
                 var repo = SubmissionRepository.Get(submission.StudentAssignment);
-                repo.CheckoutSubmission(submission.CommitId);
+                repo.Checkout(submission.CommitId); // get selected
+                var dir = TempDir.Get(repo);
 
-                SubmissionTester.TestSubmission(submission);
-                _db.SaveChanges();
+                var folder = dir.GetFolder();
+
+                return new JsonNetResult(new { Folder = folder, Results = submission.FullResults });
             }
             catch (Exception ex)
             {
                 Elmah.ErrorSignal.FromCurrentContext().Raise(ex);
-                return Json(false);
+                return new HttpStatusCodeResult(HttpStatusCode.InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpPost]
+        [CourseAuthorize(UserRoles.InstructorRole)]
+        public ActionResult RetestSubmission(SubmissionPostData data)
+        {
+            var course = _GetCourse();
+            if (course == null || course.CourseId != data.CourseId)
+            {
+                return new HttpNotFoundResult();
             }
 
-            return Json(true);
+            var user = ApplicationUser.FromUserId(data.UserId);
+            if (user == null)
+            {
+                return new HttpNotFoundResult();
+            }
+
+            try
+            {
+                var studentAssignment = _db.StudentAssignments
+                    .Include(sa => sa.Submissions)
+                    .Include(sa => sa.Assignment.Pages)
+                    .Include(sa => sa.Enrollment.User)
+                    .FirstOrDefault(sa => sa.AssignmentId == data.AssignmentId && sa.Enrollment.UserName == user.UserName);
+
+                if (studentAssignment == null)
+                {
+                    return new HttpNotFoundResult();
+                }
+
+                StudentSubmission submission;
+                if (data.SubmissionId > 0)
+                {
+                    submission = studentAssignment.Submissions.FirstOrDefault(s => s.StudentSubmissionId == data.SubmissionId);
+                }
+                else
+                {
+                    submission = studentAssignment.Submissions.LastOrDefault();
+                }
+
+                if (submission == null)
+                {
+                    return null;
+                }
+
+                SubmissionTester.TestSubmission(submission);
+                _db.SaveChanges();
+
+                return new JsonNetResult(submission.FullResults);
+            }
+            catch (Exception ex)
+            {
+                Elmah.ErrorSignal.FromCurrentContext().Raise(ex);
+                return new HttpStatusCodeResult(HttpStatusCode.InternalServerError, ex.Message);
+            }
         }
 
         #endregion
@@ -919,7 +999,7 @@ namespace Auger.Controllers
 
             Script script = _db.Scripts
                 .Include(s => s.Page)
-                .Include(s => s.Assignment)
+                .Include(s => s.Assignment.Course)
                 .FirstOrDefault(s => s.ScriptId == id);
             if (script == null)
             {
@@ -936,9 +1016,7 @@ namespace Auger.Controllers
         {
             if (ModelState.IsValid)
             {
-                Script dbScript = _db.Scripts
-                    .Include(s => s.Assignment)
-                    .FirstOrDefault(s => s.ScriptId == script.ScriptId);
+                Script dbScript = _db.Scripts.Find(script.ScriptId);
                 if (dbScript == null)
                 {
                     return HttpNotFound();
@@ -962,7 +1040,10 @@ namespace Auger.Controllers
             if (!IsCurrentCourse(courseId))
                 return RedirectToCourse(courseId);
 
-            Script script = _db.Scripts.Find(id);
+            Script script = _db.Scripts
+                .Include(s => s.Page)
+                .Include(s => s.Assignment.Course)
+                .FirstOrDefault(s => s.ScriptId == id);
             if (script == null)
             {
                 return HttpNotFound();
@@ -1061,20 +1142,5 @@ namespace Auger.Controllers
 
         #endregion
 
-
-
-
-
-
-
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                _db.Dispose();
-            }
-            base.Dispose(disposing);
-        }
     }
 }

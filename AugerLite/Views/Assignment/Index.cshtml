@@ -1,7 +1,7 @@
 ﻿@using Auger.Models;
 @model AssignmentIndexViewModel
 @{
-    ViewBag.Title = "Choose Assignment";
+    ViewBag.Title = "Assignments";
 }
 
 @section Breadcrumbs {
@@ -16,24 +16,22 @@
   <div class="col-md-6 col-xs-12">
     <div class="panel panel-primary">
       <div class="panel-heading"><h4>Unsubmitted Assignments</h4></div>
-      <div class="panel-body" style="padding: 0 17px 2px;">
+      <div class="panel-body" style="padding: 0">
         @if (Model.UnsubmittedAssignments.Any())
         {
           foreach (var assignment in Model.UnsubmittedAssignments)
           {
-                <a href="~/Assignment/Details/@assignment.AssignmentId" class="row list-group-item" style="margin-top: 2px">
-                  <div class="pull-right">
-                    <table style="height:40px;vertical-align:middle;">
-                      <tr>
-                        <th>Due:</th>
-                        <td style="padding-left:5px;">@assignment.DueDate.ToString()</td>
-                      </tr>
-                    </table>
-                  </div>
-                  <div class="text-left">
-                    <h4><i class="glyphicon glyphicon-folder-open" style="margin-right:10px"></i>@assignment.AssignmentName</h4>
-                  </div>
-                </a>
+            <div class="col-lg-6" style="padding:3px">
+              <a href="~/Assignment/Details/@assignment.AssignmentId" class="btn btn-default" style="width:100%">
+                <h4><i class="fa fa-folder-open-o" style="margin-right:10px"></i>@assignment.AssignmentName</h4>
+                <table align="center" class="small">
+                  <tr>
+                    <th class="text-right">Due:</th>
+                    <td class="text-left" style="padding-left:5px;">@assignment.DueDate.ToString()</td>
+                  </tr>
+                </table>
+              </a>
+            </div>
           }
         }
         else
@@ -46,7 +44,7 @@
   <div class="col-md-6 col-xs-12">
     <div class="panel panel-primary">
       <div class="panel-heading"><h4>Submitted Assignments</h4></div>
-      <div class="panel-body" style="padding: 0 17px 2px;">
+      <div class="panel-body" style="padding: 0;">
         @if (Model.SubmittedAssignments.Any())
         {
           foreach (var submission in Model.SubmittedAssignments)
@@ -58,23 +56,21 @@
               dueString = due.Value.ToShortDateString() + " " + due.Value.ToShortTimeString();
             }
 
-            <a href="~/Assignment/Details/@submission.StudentAssignment.AssignmentId" class="row list-group-item" style="margin-top: 2px">
-              <div class="pull-right">
-                <table style="height:40px;vertical-align:middle;">
+            <div class="col-lg-6" style="padding:3px">
+              <a href="~/Assignment/Details/@submission.StudentAssignment.AssignmentId" class="btn btn-default" style="width:100%">
+                <h4><i class="fa fa-folder-open" style="margin-right:10px"></i>@submission.StudentAssignment.Assignment.AssignmentName</h4>
+                <table align="center" class="small">
                   <tr>
-                    <th>Due:</th>
-                    <td style="padding-left:5px;">@dueString</td>
+                    <th class="text-right">Due:</th>
+                    <td class="text-left" style="padding-left:5px;">@dueString</td>
                   </tr>
                   <tr>
-                    <th>Submitted:</th>
-                    <td style="padding-left:5px;">@submission.SubmissionName</td>
+                    <th class="text-right">Submitted:</th>
+                    <td class="text-left" style="padding-left:5px;">@submission.SubmissionName</td>
                   </tr>
                 </table>
-              </div>
-              <div class="text-left">
-                <h4><i class="glyphicon glyphicon-folder-open" style="margin-right:10px"></i>@submission.StudentAssignment.Assignment.AssignmentName</h4>
-              </div>
-            </a>
+              </a>
+            </div>
           }
         }
         else

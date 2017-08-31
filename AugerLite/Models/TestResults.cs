@@ -12,17 +12,18 @@ namespace Auger.Models
         public bool CssValidationCompleted { get; set; } = false;
         public bool DomTestComplete { get; set; } = false;
 
-        public List<string> Exceptions { get; set; } = new List<string>();
-
         public List<W3CHtmlValidationMessage> W3CHtmlValidationMessages { get; set; } = new List<W3CHtmlValidationMessage>();
 
         public List<W3CCssValidationMessage> W3CCssValidationMessages { get; set; } = new List<W3CCssValidationMessage>();
 
         public DOMTestStats Stats { get; set; } = new DOMTestStats();
-        public List<DOMTest> Tests { get; set; } = new List<DOMTest>();
-        public List<DOMTest> Passes { get; set; } = new List<DOMTest>();
-        public List<DOMTest> Pending { get; set; } = new List<DOMTest>();
-        public List<DOMTest> Failures { get; set; } = new List<DOMTest>();
+        public HashSet<DOMTest> Tests { get; set; } = new HashSet<DOMTest>();
+        public HashSet<DOMTest> Passes { get; set; } = new HashSet<DOMTest>();
+        public HashSet<DOMTest> Pending { get; set; } = new HashSet<DOMTest>();
+        public HashSet<DOMTest> Failures { get; set; } = new HashSet<DOMTest>();
+
+        public List<string> Exceptions { get; set; } = new List<string>();
+        public List<String> DebugMessages { get; set; } = new List<String>();
 
         public void AppendResults(TestResults r)
         {
@@ -42,13 +43,12 @@ namespace Auger.Models
             this.Stats.Failures += r.Stats.Failures;
             this.Stats.Duration += r.Stats.Duration;
 
-            this.Tests.AddRange(r.Tests);
+            foreach (var item in r.Tests) this.Tests.Add(item);
+            foreach (var item in r.Passes) this.Passes.Add(item);
+            foreach (var item in r.Pending) this.Pending.Add(item);
+            foreach (var item in r.Failures) this.Failures.Add(item);
 
-            this.Passes.AddRange(r.Passes);
-
-            this.Pending.AddRange(r.Pending);
-
-            this.Failures.AddRange(r.Failures);
+            this.DebugMessages.AddRange(r.DebugMessages);
         }
     }
 }

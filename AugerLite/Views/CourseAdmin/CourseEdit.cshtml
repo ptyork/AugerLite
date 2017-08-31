@@ -1,60 +1,55 @@
 ﻿@model Auger.Models.Data.Course
 
 @{
-    ViewBag.Title = "Edit";
+    ViewBag.Title = "Edit Course Details";
 }
 
-<h2>Edit</h2>
+@section Breadcrumbs {
+<li><a href="~/">Auger Home</a>
+<li><a href="~/CourseAdmin">Manage Courses</a>
+<li><a href="~/CourseAdmin/CourseDetails/@Model.CourseId">@Model.CourseLabel</a>
+<li>Course Details
+}
+
+<h2>Edit Course Details</h2>
 
 
 @using (Html.BeginForm())
 {
     @Html.AntiForgeryToken()
-    
-    <div class="form-horizontal">
-        <h4>Course</h4>
-        <hr />
-        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-        @Html.HiddenFor(model => model.CourseId)
 
-        <div class="form-group">
-            @Html.LabelFor(model => model.CourseTitle, new { @class = "control-label col-md-2" })
-            <div class="col-md-10">
-                @Html.EditorFor(model => model.CourseTitle, new { @class = "form-control" })
-                @Html.ValidationMessageFor(model => model.CourseTitle, "", new { @class = "text-danger" })
-            </div>
-        </div>
+    <div class="col-lg-4 col-lg-offset-4 col-sm-6 col-sm-offset-3">
+      @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+      @Html.HiddenFor(model => model.CourseId)
 
-        <div class="form-group">
-            @Html.LabelFor(model => model.CourseLabel, new { @class = "control-label col-md-2" })
-            <div class="col-md-10">
-                @Html.EditorFor(model => model.CourseLabel, new { @class = "form-control" })
-                @Html.ValidationMessageFor(model => model.CourseLabel, "", new { @class = "text-danger" })
-            </div>
-        </div>
+      <div class="form-group">
+        <label for="CourseTitle">Course Title (<i>long</i>)</label>
+        @Html.EditorFor(model => model.CourseTitle, new { @class = "form-control" })
+        @Html.ValidationMessageFor(model => model.CourseTitle, "", new { @class = "text-danger" })
+      </div>
 
-        <div class="form-group">
-            <div class="col-md-10 col-md-offset-2">
-                <div class="checkbox">
-                    @Html.EditorFor(model => model.IsActive)
-                    @Html.LabelFor(model => model.IsActive, new { @class = "control-label" })
-                    @Html.ValidationMessageFor(model => model.IsActive, "", new { @class = "text-danger" })
-                </div>
-            </div>
-        </div>
+      <div class="form-group">
+        <label for="CourseLabel">Course Label (<i>short</i>)</label>
+        @Html.EditorFor(model => model.CourseLabel, new { @class = "form-control" })
+        @Html.ValidationMessageFor(model => model.CourseLabel, "", new { @class = "text-danger" })
+      </div>
 
-        <div class="form-group">
-            <div class="col-md-offset-2 col-md-10">
-                <input type="submit" value="Save" class="btn btn-default" />
-            </div>
+      <div class="form-group">
+        <div class="checkbox">
+          <label>
+            @Html.EditorFor(model => model.IsActive)
+            Course Is Active
+          </label>
         </div>
+      </div>
+
+      <div class="form-group text-right">
+        <input type="submit" value="Save" class="btn btn-primary" />
+        <a href="~/CourseAdmin/CourseDetails/@Model.CourseId" class="btn btn-default" role="button">Cancel</a>
+      </div>
     </div>
 }
 
-<div>
-    @Html.ActionLink("Cancel", "CourseDetails", new { id = Model.CourseId })
-</div>
-
 @section Scripts {
-    @Scripts.Render("~/bundles/jqueryval")
+  @Scripts.Render("~/bundles/jqueryval")
 }

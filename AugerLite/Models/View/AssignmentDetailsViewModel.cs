@@ -11,8 +11,9 @@ namespace Auger.Models.View
 {
     public class AssignmentDetailsViewModel
     {
+        public ApplicationUser User { get; set; } = null;
+        public Course Course { get; set; } = null;
         public Assignment Assignment { get; set; } = null;
         public List<StudentSubmission> Submissions { get; set; } = new List<StudentSubmission>();
-        public SubmissionViewModel SelectedSubmission { get; set; } = null;
     }
 }

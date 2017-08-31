@@ -11,6 +11,6 @@ namespace Auger.Models.View
     public class SubmissionViewModel
     {
         public StudentSubmission Submission { get; set; } = null;
-        public SubmissionFolder Folder { get; set; }
+        public RepoFolder Folder { get; set; }
     }
 }

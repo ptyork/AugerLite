@@ -13,25 +13,29 @@ namespace Auger.Models
         {
             DeviceId = "LG",
             DeviceName = "Large Desktop (1280px)",
-            ViewportWidth = 1280
+            ViewportWidth = 1280,
+            ViewportHeight = 1024
         };
         public static Device Medium = new Device
         {
             DeviceId = "MD",
             DeviceName = "Medium Device (1024px)",
-            ViewportWidth = 1024
+            ViewportWidth = 1024,
+            ViewportHeight = 768
         };
         public static Device Small = new Device
         {
             DeviceId = "SM",
             DeviceName = "Small Device (768px)",
-            ViewportWidth = 768
+            ViewportWidth = 768,
+            ViewportHeight = 1024
         };
         public static Device ExtraSmall = new Device
         {
             DeviceId = "XS",
             DeviceName = "Extra Small Device (360px)",
-            ViewportWidth = 360
+            ViewportWidth = 360,
+            ViewportHeight = 640
         };
 
         public static IEnumerable<Device> AllDevices
@@ -62,5 +66,6 @@ namespace Auger.Models
         public string DeviceId { get; set; }
         public string DeviceName { get; set; }
         public int ViewportWidth { get; set; }
+        public int ViewportHeight { get; set; }
     }
 }

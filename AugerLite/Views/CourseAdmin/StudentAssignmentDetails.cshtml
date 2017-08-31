@@ -5,11 +5,11 @@
 @{
     var assignment = Model.StudentAssignment.Assignment;
     var enrollment = Model.StudentAssignment.Enrollment;
-    var submission = Model.SelectedSubmission;
     var course = assignment.Course;
+
     ViewBag.Title = "View " + assignment.AssignmentName + " for " + enrollment.UserName;
     ViewBag.BodyClass = "full";
-    ViewBag.SubmissionName = submission.Submission.SubmissionName;
+    ViewBag.BrowseRoot = @Url.Content($"~/BrowseUser/{course.CourseId}/{enrollment.UserName}/{assignment.AssignmentId}");
 }
 
 @section Breadcrumbs {
@@ -20,13 +20,9 @@
   <li>Evaluate Assignment
 }
 
-@if (assignment.DueDate.HasValue)
-{
-    <div class="hidden-xs pull-right" style="font-size:20px;margin-top:30px;">Due: @assignment.DueDate.Value.ToShortDateString() @assignment.DueDate.Value.ToShortTimeString()</div>
-}
-<h2>Evaluate @assignment.AssignmentName</h2>
+<h3>Evaluate @assignment.AssignmentName</h3>
 <div class="row">
-  <div class="col-sm-7 form-inline">
+  <div class="col-sm-6 form-inline">
     <div class="form-group">
       <label for="selectUser">User:</label>
       <div class="input-group">
@@ -36,54 +32,58 @@
           {
             var selected = sa.StudentAssignmentId == Model.StudentAssignment.StudentAssignmentId ? "selected" : "";
 
-              <option value="@sa.StudentAssignmentId" @selected>@sa.Enrollment.UserName</option>
+            <option value="@sa.StudentAssignmentId" @selected>@sa.Enrollment.UserName</option>
           }
         </select>
         <a href="#" id="userNext" class="btn input-group-addon" style="width:auto;"><span class="fa fa-arrow-right"></span></a>
       </div>
     </div>
   </div>
-  <div class="col-sm-5 form-inline text-right-not-xs">
-    <div class="form-group">
-      <label for="selectSubmission">Submission:</label>
-      <select class="form-control" id="selectSubmission" name="selectSubmission" style="max-width:unset;">
-        @foreach (var submissionChoice in Model.StudentAssignment.Submissions)
-        {
-          var selected = submissionChoice.StudentSubmissionId == submission.Submission.StudentSubmissionId ? "selected" : "";
+  <div class="col-sm-6 text-right-not-xs">
+    <table class="small text-left" style="display:inline-table;">
+      @if (assignment.DueDate.HasValue)
+      {
+        var due = assignment.DueDate.Value;
 
-            <option value="@submissionChoice.StudentSubmissionId" @selected>@submissionChoice.SubmissionName</option>
-        }
-      </select>
-    </div>
+        <tr>
+          <th>Assignment Due By:</th>
+          <td style="padding-left:5px;">@due.ToShortDateString() @due.ToShortTimeString()</td>
+        </tr>
+      }
+      <tr>
+        <th>Submission Date:</th>
+        <td>
+          <select class="" id="selectSubmission" name="selectSubmission">
+            @foreach (var submissionChoice in Model.StudentAssignment.Submissions)
+            {
+              <option value="@submissionChoice.StudentSubmissionId">@submissionChoice.SubmissionName</option>
+            }
+          </select>
+        </td>
+      </tr>
+    </table>
   </div>
 </div>
 
-<div class="text-center hidden" id="busydiv" style="padding: 50px">
-  <div class="fa fa-spin fa-spinner" style="font-size: 60pt;"></div>
-  <div style="font-size: 18pt; margin-top: 50px;">LOADING<br>PLEASE WAIT</div>
-</div>
-<div id="evaldiv">
-  <a id="retest" class="pull-right btn btn-primary btn-sm" role="button"
-     href="~/CourseAdmin/RetestSubmission/@course.CourseId/@submission.Submission.StudentSubmissionId">
-    <span class="fa fa-check"></span>&nbsp;Re-test Submission
+<div id="page-loading-div"></div>
+<div id="results-div" class="hidden">
+  <!-- DEFAULT TO HIDDEN -->
+  <a id="retest" class="pull-right btn btn-default btn-sm" role="button">
+    <span class="fa fa-check"></span>&nbsp;Recheck
   </a>
 
-  <ul class="nav nav-tabs" id="tabs" style="margin-top:20px;">
-    <li class="active"><a data-toggle="tab" id="tabFeedback" href="#paneFeedback">View Feedback</a></li>
-    <li class=""><a data-toggle="tab" id="tabView" href="#paneView">View Submission</a></li>
+  <ul class="nav nav-tabs" id="tabs" style="margin-top:10px;">
+    <li class="active"><a data-toggle="tab" id="tabFeedback" href="#paneFeedback">Feedback</a></li>
+    <li class=""><a data-toggle="tab" id="tabView" href="#paneView">Submission</a></li>
   </ul>
 
-  <div class="tab-content text-left" style="padding:10px 15px 15px 15px">
+  <div class="tab-content" style="padding:0">
     <div class="tab-pane active" id="paneFeedback">
-      @if (submission.Submission.FullResults == null)
-      {
-          submission.Submission.FullResults = new TestResults();
-      }
-      @Html.Partial("_ViewFeedback", submission.Submission.FullResults)
+      @Html.Partial("_ViewFeedback")
     </div>
 
     <div class="tab-pane" id="paneView">
-      @Html.Partial("_ViewSubmission", submission)
+      @Html.Partial("_ViewSubmission")
     </div>
 
   </div>
@@ -92,15 +92,25 @@
 @section Scripts {
   <script>
     var isBusy = false;
-    $(function () {
-      function busy() {
-        isBusy = true;
-        $('#selectUser').prop('disabled', true);
-        $('#selectSubmission').prop('disabled', true);
-        $('#evaldiv').addClass('hidden');
-        $('#busydiv').removeClass('hidden');
-      }
 
+    function busy() {
+      isBusy = true;
+      $('#selectUser').prop('disabled', true);
+      $('#selectSubmission').prop('disabled', true);
+      $('#results-div').addClass('hidden');
+      showLoadingDiv($('#page-loading-div'));
+    }
+
+    function ready() {
+      isBusy = false;
+      $('#selectUser').prop('disabled', false);
+      $('#selectSubmission').prop('disabled', false);
+      hideLoadingDiv($('#page-loading-div'));
+      $('#results-div').removeClass('hidden');
+      $(window).resize();
+    }
+
+    $(function () {
       $('#selectUser').change(function () {
         busy();
         var assignmentId = $('#selectUser').val();
@@ -130,22 +140,58 @@
       });
 
       $('#selectSubmission').change(function () {
-        busy();
-        var submissionId = $('#selectSubmission').val();
-        window.location.href = '@Url.Content($"~/CourseAdmin/StudentAssignmentDetails/{assignment.CourseId}/{Model.StudentAssignment.StudentAssignmentId}")/' + submissionId;
-      });
+        FolderChanging();
+        FeedbackChanging();
 
-      $('#retest').click(function () {
-        if (isBusy) return;
-        var $btn = $('#retest');
-        $btn.html('<i class="fa fa-spinner"></i>');
-        $btn.addClass('btn-danger disabled');
+        busy();
+
+        var submissionId = $('#selectSubmission').val();
+
         $.ajax({
-          url: $btn.attr('href'),
+          url: '@Url.Action("GetSubmissionDetails")',
+          data: {
+            userId: '@enrollment.UserId',
+            courseId: @course.CourseId,
+            assignmentId: @assignment.AssignmentId,
+            submissionId: submissionId
+          },
           type: 'POST',
           dataType: 'json'
         }).done(function (data) {
-          location.reload();
+          FolderChanged(data.Folder);
+          FeedbackChanged(data.Results);
+          ready();
+        }).fail(function (xhr, textStatus, errorThrown) {
+          alert(errorThrown);
+        });
+      });
+      $('#selectSubmission').val($('#selectSubmission option:last').val());
+      $('#selectSubmission').change();
+
+      $('#retest').click(function () {
+        if (isBusy) return;
+        FeedbackChanging();
+
+        var $btn = $('#retest');
+        var btnText = $btn.html();
+        $btn.html('<i class="fa fa-spinner fa-spin"></i> Testing...');
+        $btn.addClass('disabled');
+
+        $.ajax({
+          url: '@Url.Action("RetestSubmission")',
+          data: {
+            userId: '@enrollment.UserId',
+            courseId: '@course.CourseId',
+            assignmentId: '@assignment.AssignmentId',
+            submissionId: $('#selectSubmission').val()
+          },
+          type: 'POST',
+          dataType: 'json'
+        }).done(function (data) {
+          FeedbackChanged(data);
+
+          $btn.html(btnText);
+          $btn.removeClass('disabled');
         }).fail(function (xhr, textStatus, errorThrown) {
           alert(errorThrown);
         });
@@ -154,7 +200,4 @@
     });
 
   </script>
-
-  @Html.Partial("_ViewSubmissionScript", Url.Content($"~/BrowseUser/{assignment.CourseId}/{enrollment.UserName}/{assignment.AssignmentId}"))
-
 }

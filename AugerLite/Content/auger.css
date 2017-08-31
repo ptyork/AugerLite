@@ -1,0 +1,528 @@
+﻿[draggable] {
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Required to make elements draggable in old WebKit */
+  -khtml-user-drag: element;
+  -webkit-user-drag: element;
+}
+
+body {
+    padding-top: 50px;
+    padding-bottom: 20px;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+body.home .body-content {
+    background-color: transparent;
+}
+
+body.home h1 {
+    font-size: 42pt;
+    padding-top: 30px;
+}
+
+body.home h3 {
+    padding-bottom: 30px;
+}
+
+body.home .body-content img {
+    padding: 50px 0;
+    max-width: 80%;
+}
+
+body.full {
+   overflow: hidden;
+}
+
+body.full .body-content {
+    width: 100%;
+}
+
+body.full footer {
+    display: none;
+}
+
+#fulldiv {
+}
+#folderdiv {
+    overflow: auto;
+}
+#editordiv {
+}
+
+iframe {
+    border: 0;
+}
+
+.full-height{
+    /* NOTE: Used by script to expand height of container */
+}
+.full-height > div, .full-height > iframe {
+    width: 100%;
+    height: 100%;
+}
+.full-height .full-height-overflow {
+    overflow: auto;
+}
+
+.tab-pane .panel, .tab-pane .panel-heading {
+    border-radius: unset;
+}
+
+.dropdown-menu {
+    min-width: 0;
+}
+.dropdown-menu a {
+    cursor: pointer;
+}
+.dropdown-submenu {
+    position:relative;
+}
+.dropdown-submenu>.dropdown-menu {
+    top:0;
+    left:100%;
+    margin-top:-6px;
+    margin-left:-1px;
+    -webkit-border-radius:0 6px 6px 6px;
+    -moz-border-radius:0 6px 6px 6px;
+    border-radius:0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+    display:block;
+}
+.dropdown-submenu>a:after {
+    display:block;
+    content:" ";
+    float:right;
+    width:0;
+    height:0;
+    border-color:transparent;
+    border-style:solid;
+    border-width:5px 0 5px 5px;
+    border-left-color:#999;
+    margin-top:5px;
+    margin-right:-10px;
+}
+.dropdown-submenu:hover>a:after {
+    border-left-color: transparent;
+}
+
+.ide .btn-toolbar {
+    min-width: 1000px;
+}
+.ide .panel, .ide .panel-heading {
+    border-radius: unset;
+}
+.ide .panel-body {
+    padding: 0;
+}
+.ide .ide-left-pane {
+    float: left;
+    width: 20%;
+    padding: 0;
+}
+.ide .ide-right-pane {
+    float: right;
+    width: 80%;
+    padding: 0;
+}
+.ide .toggle-button {
+    color: white;
+    cursor: pointer;
+}
+.ide .ide-horizontal-splitter {
+    position: absolute;
+    z-index: 999;
+    width: 10px;
+    display: table;
+}
+.ide .ide-horizontal-splitter > a {
+    cursor: pointer;
+    color: white;
+    text-decoration: none;
+    display: table-cell;
+    text-align: center;
+    vertical-align: middle;
+}
+.ide .ide-horizontal-splitter > a:before {
+    font-family: FontAwesome;
+    content: "\f0d9 \000a \f0d9 \000a \f0d9 \000a \f0d9 \000a \f0d9";
+}
+.ide .ide-horizontal-splitter > a.collapsed:before {
+    font-family: FontAwesome;
+    content: "\f0da \000a \f0da \000a \f0da \000a \f0da \000a \f0da";
+}
+.ide .ide-right-pane > .panel {
+    margin-left: 10px;
+}
+@media (max-width: 767px) {
+    .ide .ide-left-pane {
+        float: none;
+        width: 100%;
+    }
+    .ide .ide-right-pane {
+        float: none;
+        width: 100%;
+    }
+    .ide .ide-right-pane > .panel {
+        margin-left: 0;
+    }
+}
+
+.ide-file-list {
+    padding: 0;
+}
+.ide-file-list div {
+    width: 100%;
+}
+.ide-file-list.droptarget {
+    outline: 5px dashed #999;
+    outline-offset: -5px;
+    background-color: #666;
+}
+.ide-file-list.dropover,
+.ide-file-list .folder-wrapper.dropover {
+    outline: 5px dashed #666;
+    outline-offset: -5px;
+}
+.ide-file-list.droptarget a,
+.ide-file-list.dropover a,
+.ide-file-list .folder-wrapper.dropover a {
+    background-color: transparent;
+}
+.ide-file-list a {
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border-radius: unset !important;
+}
+.ide-file-list a:before, .ide-file-list a:after {
+    font-family: FontAwesome;
+    display: inline-block;
+    margin-left: 0.2em;
+    margin-right: 0.2em;
+}
+.ide-file-list a:after {
+    position: absolute;
+    right: 0;
+}
+.ide-file-list .folder:before {
+    content: "\f147  \f115 ";
+}
+.ide-file-list .folder.collapsed:before {
+    content: "\f196  \f114 ";
+}
+.ide-file-list .file:before {
+    margin-left: 1.3em;
+}
+.ide-file-list .file-other:before, .ide-file-list .file-script:before {
+    content: "\f016";
+}
+.ide-file-list .file-html:before {
+    content: "\f1c9";
+}
+.ide-file-list .file-css:before {
+    content: "\f0f6";
+}
+.ide-file-list .file-image:before {
+    content: "\f1c5";
+}
+.ide-file-list .dirty, .ide-file-list .warn {
+    padding-right: 20px;
+}
+.ide-file-list .dirty.warn {
+    padding-right: 40px;
+}
+.ide-file-list .dirty:after {
+    content: "\f0c7";
+}
+.ide-file-list .warn:after {
+    content: "\f071";
+}
+.ide-file-list .dirty.warn:after {
+    content: "\f0c7  \f071";
+}
+.ide-file-list .level-0 {
+    padding-left: 15px;
+}
+.ide-file-list .level-1 {
+    padding-left: 30px;
+}
+.ide-file-list .level-2 {
+    padding-left: 45px;
+}
+.ide-file-list .level-3 {
+    padding-left: 60px;
+}
+.ide-file-list .level-4 {
+    padding-left: 75px;
+}
+.ide-file-list .level-5 {
+    padding-left: 90px;
+}
+.ide-file-list .level-6 {
+    padding-left: 105px;
+}
+
+.loading {
+    padding: 50px 0;
+    text-align: center;
+}
+.loading div {
+    margin-top: 6pt;
+    font-size: 18pt;
+    line-height: 24pt;
+}
+
+/* Set padding to keep content from hitting the edges */
+.body-content {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+.breadcrumb-container {
+    margin-left: -15px;
+    margin-right: -15px;
+}
+
+.breadcrumb-container .container {
+    padding: 0;
+}
+
+.breadcrumb-container .breadcrumb {
+    margin-bottom: 0;
+}
+
+.dl-horizontal dd {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 1.42857143em;
+}
+
+.panel .panel-heading {
+    padding: 1px 10px;
+}
+
+.panel.panel-list .panel-body,
+.panel.ide-file-list .panel-body {
+    padding: 0;
+    max-height: 860px;
+    overflow-y: auto;
+    width: 100%;
+    font-size: 12pt;
+}
+
+.panel.panel-list .panel-body > p {
+    padding: 15px;
+}
+
+.panel.file-view .panel-body {
+    padding: 0;
+}
+
+.panel.ide-file-list .panel-body {
+    font-size: 11pt;
+}
+
+.panel.panel-list .list-group-item,
+.panel.ide-file-list .list-group-item {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.panel.ide-file-list .list-group-item {
+    padding: 5px;
+}
+
+.panel.panel-list a.list-group-item,
+.panel.ide-file-list a.list-group-item {
+    cursor: pointer;
+}
+
+.panel.course-list a.list-group-item {
+    text-align: center;
+    padding: 0;
+    border: 5px solid transparent;
+    background-clip: padding-box;
+}
+
+.panel.course-list a.list-group-item h5 {
+    font-size: 16pt;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    margin: 0;
+    padding: 10px;
+}
+
+.panel.course-list a.list-group-item table {
+    width: 100%;
+    font-size: 11pt;
+    margin: 20px 0;
+}
+
+.panel.course-list a.list-group-item th {
+    text-align: right;
+    font-weight: bold;
+    width: 50%;
+    padding-right: 5px;
+}
+
+.panel.course-list a.list-group-item td {
+    text-align: left;
+    padding-left: 5px;
+}
+
+.text-left {
+    text-align: left !important;
+}
+
+table {
+    background-color: transparent;
+}
+
+.form-control-feedback {
+    display: none;
+}
+.form-control-feedback .has-feedback {
+    display: block;
+}
+
+select.categorized option:disabled {
+    font-size: 0.8em;
+    font-weight: bold;
+    font-style: italic;
+    margin: 0.1em 0;
+    background-color: lightgray;
+}
+
+/* Set width on the form input elements since they're 100% wide by default */
+/*input,
+select,
+textarea {
+    max-width: 280px;
+}*/
+
+.btn-list > div {
+    padding: 10px;
+    display: table;
+}
+.btn-list > div > a {
+    white-space:normal;
+    height:150px;
+    width:100%;
+    display:table-cell;
+    vertical-align:middle;
+}
+
+.nav-tabs {
+    margin-bottom: 0;
+}
+
+.tab-content {
+    padding: 10px;
+}
+
+.auger-extract {
+    border: 1px solid black;
+    padding: 2px;
+    margin: 2px 0;
+    font-family: consolas, "courier new", courier, monospace;
+}
+.auger-hilite {
+    font-weight: bold;
+}
+
+
+.text-left-not-xs, .text-left-not-sm, .text-left-not-md, .text-left-not-lg {
+    text-align: left;
+}
+.text-center-not-xs, .text-center-not-sm, .text-center-not-md, .text-center-not-lg {
+    text-align: center;
+}
+.text-right-not-xs, .text-right-not-sm, .text-right-not-md, .text-right-not-lg {
+    text-align: right;
+}
+.text-justify-not-xs, .text-justify-not-sm, .text-justify-not-md, .text-justify-not-lg {
+    text-align: justify;
+}
+
+@media (max-width: 767px) {
+    .text-left-not-xs, .text-center-not-xs, .text-right-not-xs, .text-justify-not-xs {
+        text-align: inherit;
+    }
+    .text-left-xs {
+        text-align: left;
+    }
+    .text-center-xs {
+        text-align: center;
+    }
+    .text-right-xs {
+        text-align: right;
+    }
+    .text-justify-xs {
+        text-align: justify;
+    }
+}
+@media (min-width: 768px) and (max-width: 991px) {
+    .text-left-not-sm, .text-center-not-sm, .text-right-not-sm, .text-justify-not-sm {
+        text-align: inherit;
+    }
+    .text-left-sm {
+        text-align: left;
+    }
+    .text-center-sm {
+        text-align: center;
+    }
+    .text-right-sm {
+        text-align: right;
+    }
+    .text-justify-sm {
+        text-align: justify;
+    }
+}
+@media (min-width: 992px) and (max-width: 1199px) {
+    .text-left-not-md, .text-center-not-md, .text-right-not-md, .text-justify-not-md {
+        text-align: inherit;
+    }
+    .text-left-md {
+        text-align: left;
+    }
+    .text-center-md {
+        text-align: center;
+    }
+    .text-right-md {
+        text-align: right;
+    }
+    .text-justify-md {
+        text-align: justify;
+    }
+}
+@media (min-width: 1200px) {
+    .text-left-not-lg, .text-center-not-lg, .text-right-not-lg, .text-justify-not-lg {
+        text-align: inherit;
+    }
+    .text-left-lg {
+        text-align: left;
+    }
+    .text-center-lg {
+        text-align: center;
+    }
+    .text-right-lg {
+        text-align: right;
+    }
+    .text-justify-lg {
+        text-align: justify;
+    }
+}
+
+#avpw_tool_content_header {
+    display: none;
+}
+#avpw_canvas_embed {
+    top: 110px !important;
+}

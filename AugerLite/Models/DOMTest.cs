@@ -31,5 +31,19 @@ namespace Auger.Models
             }
         }
 
+        public override string ToString()
+        {
+            return $"{Page} {Id}";
+        }
+
+        public override int GetHashCode()
+        {
+            return ToString().GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return this.GetHashCode() == obj.GetHashCode();
+        }
     }
 }

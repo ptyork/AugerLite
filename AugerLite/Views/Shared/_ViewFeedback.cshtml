@@ -1,259 +1,316 @@
-﻿@using Auger.Models
-
-@model TestResults
-
-@{
-    var results = Model;
-
-    var domTestComplete = results.DomTestComplete;
-    var hasDomErrors = domTestComplete && (results.Failures.Any() || results.Exceptions.Any());
-    var domErrorCount = 0;
-    if (hasDomErrors)
-    {
-      domErrorCount = results.Failures.Count + results.Exceptions.Count;
-    }
-
-    var htmlValidationComplete = results != null && results.HtmlValidationCompleted;
-    results?.W3CHtmlValidationMessages?.RemoveAll(m => m.Type != W3CHtmlValidationMessage.MessageTypes.Error);
-    var hasHtmlValidationErrors = htmlValidationComplete && results.W3CHtmlValidationMessages.Any();
-    var htmlValidationErrorCount = 0;
-    if (hasHtmlValidationErrors)
-    {
-      htmlValidationErrorCount = results.W3CHtmlValidationMessages.Count;
-    }
-
-    var cssValidationComplete = results != null && results.CssValidationCompleted;
-    results?.W3CCssValidationMessages?.RemoveAll(m => m.Level != W3CCssValidationMessage.MessageLevels.Error);
-    var hasCssValidationErrors = cssValidationComplete && results.W3CCssValidationMessages.Any();
-    var cssValidationErrorCount = 0;
-    if (hasCssValidationErrors)
-    {
-      cssValidationErrorCount = results.W3CCssValidationMessages.Count;
-    }
-}
-
-<div class="row full-height" style="overflow:auto">
-  <div class="col-md-4">
-    @*<div class="panel panel-success">
-      <div class="panel-heading">
-        <h4>
-          <span id="domCheckBadge" class="badge pull-right">
-            <i class="fa fa-check"></i>
-          </span>
-          Assignment Submitted: @ViewBag.SubmissionName
-        </h4>
-      </div>
-    </div>*@
-    <div id="domCheck" class="panel panel-@(!domTestComplete || hasDomErrors ? "danger" : "success")">
-      <div class="panel-heading">
-        <h4>
-          Assignment Error Check
-          <span id="domCheckBadge" class="badge pull-right">
-            @if (!domTestComplete)
-            {
-                <i class="fa fa-warning"></i>
-            }
-            else if (!hasDomErrors)
-            {
-                <i class="fa fa-check"></i>
-            }
-            else
-            {
-                <text>@domErrorCount</text>
-            }
-          </span>
-        </h4>
-      </div>
-      <div class="panel-body">
-        <ul id="domErrorsList" style="padding-left:10px;">
-          @if (!domTestComplete)
-          {
-              <li style="list-style-type:none;margin-left:-10px;">
-                Though the assignment was successfully submitted, we were
-                unable to run the assignment check. This may mean that the
-                assignment had no specific items to check or it may mean
-                that the process failed. You may recheck the assignment
-                by clicking the button above and to the right. If you keep
-                getting this message, then likely there is nothing to check
-                and all is well.
-              </li>
-          }
-          else if (!hasDomErrors)
-          {
-              <li style="list-style-type:none;margin-left:-10px;">
-                Congratulations! No errors found. Remember that this simply
-                means that the assignment passes a basic "sanity-check". It
-                does not mean that your assignment is 100% correct.
-              </li>
-          }
-          else
-          {
-            if (results.Exceptions != null && results.Exceptions.Count > 0)
-            {
-                  <li style="list-style-type:none;margin-left:-10px;">
-                    <h4><i class="fa fa-warning"></i> General Errors</h4>
-                  </li>
-            }
-            foreach (var exception in results.Exceptions)
-            {
-                  <li>@exception</li>
-            }
-            var filename = "";
-            foreach (var test in results.Failures)
-            {
-              if (test.Page != filename)
-              {
-                filename = test.Page;
-                      <li style="list-style-type:none;margin-left:-10px;">
-                        <h4><i class="fa fa-file-code-o"></i> @filename</h4>
-                      </li>
-              }
-                  <li>@test.Title</li>
-            }
-          }
-        </ul>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div id="htmlValidation" class="panel panel-@(!htmlValidationComplete || hasHtmlValidationErrors ? "danger" : "success")">
-      <div class="panel-heading">
-        <h4>
-          W3C HTML Validation
-          <span id="htmlValidationBadge" class="badge pull-right">
-            @if (!htmlValidationComplete)
-            {
-                <i class="fa fa-warning"></i>
-            }
-            else if (!hasHtmlValidationErrors)
-            {
-                <i class="fa fa-check"></i>
-            }
-            else
-            {
-                <text>@htmlValidationErrorCount</text>
-            }
-          </span>
-        </h4>
-      </div>
-      <div class="panel-body">
-        <ul id="htmlValidationList" style="padding-left:10px;">
-          @if (!htmlValidationComplete)
-          {
-              <li style="list-style-type:none;margin-left:-10px;">
-                Though your assignment was successfully submitted, we were
-                unable to run the W3C HTML Validation. You may recheck the
-                assignment by clicking the button above and to the right.
-              </li>
-          }
-          else if (!hasHtmlValidationErrors)
-          {
-              <li style="list-style-type:none;margin-left:-10px;">
-                Congratulations! No HTML Validation issues found.
-              </li>
-          }
-          else
-          {
-            var filename = "";
-            foreach (var message in results.W3CHtmlValidationMessages)
-            {
-              if (message.Page != filename)
-              {
-                filename = message.Page;
-                      <li style="list-style-type:none;margin-left:-10px;">
-                        <h4><i class="fa fa-file-code-o"></i> @filename</h4>
-                      </li>
-              }
-              var text = message.Extract;
-              if (!String.IsNullOrWhiteSpace(text))
-              {
-                var start = message.HiliteStart;
-                var len = message.HiliteLength;
-                var end = start + len;
-                text = text.Substring(0, start) + "(((HS)))" + text.Substring(start, len) + "(((HE)))" + text.Substring(end);
-                text = HttpUtility.HtmlEncode(text);
-                text = text.Replace("(((HS)))", "<span class=\"auger-hilite\">");
-                text = text.Replace("(((HE)))", "</span>");
-                      <li>
-                        line @message.LastLine: @message.Message
-                        <div class="auger-extract">@Html.Raw(text)</div>
-                      </li>
-              }
-              else
-              {
-                      <li>
-                        line @message.LastLine: @message.Message
-                      </li>
-              }
-            }
-          }
-        </ul>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div id="cssValidation" class="panel panel-@(!cssValidationComplete || hasCssValidationErrors ? "danger" : "success")">
-      <div class="panel-heading">
-        <h4>
-          W3C CSS Validation
-          <span id="cssValidationBadge" class="badge pull-right">
-            @if (!cssValidationComplete)
-          {
-                <i class="fa fa-warning"></i>
-            }
-            else if (!hasCssValidationErrors)
-            {
-                <i class="fa fa-check"></i>
-            }
-            else
-            {
-                <text>@cssValidationErrorCount</text>
-            }
-          </span>
-        </h4>
-      </div>
-      <div class="panel-body">
-        <ul id="cssValidationList" style="padding-left:10px;">
-          @if (!cssValidationComplete)
-          {
-              <li style="list-style-type:none;margin-left:-10px;">
-                Though your assignment was successfully submitted, we were
-                unable to run the W3C CSS Validation. You may recheck the
-                assignment by clicking the button above and to the right.
-              </li>
-          }
-          else if (!hasCssValidationErrors)
-          {
-              <li style="list-style-type:none;margin-left:-10px;">
-                Congratulations! No CSS Validation issues found.
-              </li>
-          }
-          else
-          {
-            var filename = "";
-            foreach (var message in results.W3CCssValidationMessages)
-            {
-              if (message.File != filename)
-              {
-                filename = message.File;
-                      <li style="list-style-type:none;margin-left:-10px;">
-                        <h4><i class="fa fa-file-code-o"></i> @filename</h4>
-                      </li>
-              }
-                  <li>
-                    line @message.Line: @message.Message
-                    @if (!string.IsNullOrWhiteSpace(message.Context))
-                  {
-                        <span class="auger-context">(in @message.Context selector)</span>
-                    }
-                  </li>
-
-            }
-          }
-        </ul>
-      </div>
-    </div>
+﻿<div class="row full-height">
+  <div class="full-height-overflow" id="feedback-container">
+    <div class="col-md-4" id="dom-check-container"></div>
+    <div class="col-md-4" id="html-validation-container"></div>
+    <div class="col-md-4" id="css-validation-container"></div>
   </div>
 </div>
 
+<script>
+    // declare top-level events
+    var FEEDBACK_CHANGING_EVENT = 'feedbackchanging';
+    function FeedbackChanging() {
+      var evt = $.Event(FEEDBACK_CHANGING_EVENT);
+      $(window).trigger(evt);
+    }
+    function OnFeedbackChanging(func) {
+      $(window).on(FEEDBACK_CHANGING_EVENT, func);
+    }
 
+    var FEEDBACK_CHANGED_EVENT = 'feedbackchanged';
+    function FeedbackChanged(feedback) {
+      var evt = $.Event(FEEDBACK_CHANGED_EVENT);
+      evt.Feedback = feedback;
+      $(window).trigger(evt);
+    }
+    function OnFeedbackChanged(func) {
+      $(window).on(FEEDBACK_CHANGED_EVENT, func);
+    }
+</script>
+
+<script>
+  function Page(name) {
+    this.Name = name;
+    this.Failures = [];
+    this.HtmlMessages = [];
+    this.CssMessages = [];
+    this.HasFailures = function () { return this.Failures.length > 0; };
+    this.HasHtmlMessages = function () { return this.HtmlMessages.length > 0; };
+    this.HasCssMessages = function () { return this.CssMessages.length > 0; };
+  }
+  function GetPage(fb, name) {
+    if (!fb.Pages) {
+      fb.Pages = [];
+      fb.PagesMap = {};
+    }
+    page = fb.PagesMap[name];
+    if (!page) {
+      page = new Page(name);
+      fb.PagesMap[name] = page;
+      fb.Pages.push(page);
+    }
+    return page;
+  }
+
+  OnFeedbackChanging(function () {
+    $('#dom-check-container').empty();
+    $('#html-validation-container').empty();
+    $('#css-validation-container').empty();
+    showLoadingDiv($('#feedback-container'));
+  });
+
+  OnFeedbackChanged(function (e) {
+    var fb = e.Feedback;
+
+    if (!fb) {
+      fb = {
+        DomTestComplete: false,
+        HtmlValidationCompleted: false,
+        CssValidationCompleted: false
+      }
+    }
+
+    fb.DomTestPanelClass = "danger";
+    if (fb.DomTestComplete) {
+      fb.DomErrorCount = fb.Failures.length + fb.Exceptions.length;
+      fb.HasDomErrors = fb.DomTestComplete && fb.DomErrorCount > 0;
+      if (!fb.HasDomErrors) fb.DomTestPanelClass = "success";
+      fb.HasExceptions = fb.Exceptions.length > 0;
+      fb.HasFailures = fb.Failures.length > 0;
+      for (var i = 0; i < fb.Failures.length; i++) {
+        var test = fb.Failures[i];
+        page = GetPage(fb, test.Page);
+        page.Failures.push(test);
+      }
+    }
+
+    fb.HtmlPanelClass = "danger";
+    if (fb.HtmlValidationCompleted) {
+      fb.HtmlMessages = fb.W3CHtmlValidationMessages.filter(function (m) { return m.Type && m.Type.toLowerCase() === 'error' });
+      fb.HtmlMessageCount = fb.HtmlMessages.length;
+      fb.HasHtmlMessages = fb.HtmlMessageCount > 0;
+      if (!fb.HasHtmlMessages) fb.HtmlPanelClass = "success";
+      for (var i = 0; i < fb.HtmlMessages.length; i++) {
+        var message = fb.HtmlMessages[i];
+        if (!!message.Extract) {
+          message.Extract1 = message.Extract;
+          var start = message.HiliteStart;
+          var len = message.HiliteLength;
+          if (start >= 0 && len >= 0) {
+            message.Extract1 = message.Extract.substr(0, start);
+            message.Extract2 = message.Extract.substr(start, len);
+            message.Extract3 = message.Extract.substr(start + len);
+          }
+        }
+        page = GetPage(fb, message.Page);
+        page.HtmlMessages.push(message);
+      }
+    }
+
+    fb.CssPanelClass = "danger";
+    if (fb.CssValidationCompleted) {
+      fb.CssMessages = fb.W3CCssValidationMessages.filter(function (m) { return m.Type && m.Type.toLowerCase() === 'error' });
+      fb.CssErrorCount = fb.CssMessages.length;
+      fb.HasCssErrors = fb.CssErrorCount > 0;
+      if (!fb.HasCssErrors) fb.CssPanelClass = "success";
+      for (var i = 0; i < fb.CssMessages.length; i++) {
+        var message = fb.CssMessages[i];
+        page = GetPage(fb, message.Page);
+        page.CssMessages.push(message);
+      }
+    }
+
+    var domTemplate = $("#dom-check-template").html();
+    var htmlTemplate = $("#html-validation-template").html();
+    var cssTemplate = $("#css-validation-template").html();
+
+    $('#dom-check-container').html(Mustache.render(domTemplate, fb));
+    $('#html-validation-container').html(Mustache.render(htmlTemplate, fb));
+    $('#css-validation-container').html(Mustache.render(cssTemplate, fb));
+
+    hideLoadingDiv($('#feedback-container'));
+  });
+</script>
+
+<script type="text/template" id="dom-check-template">
+  <div class="panel panel-{{DomTestPanelClass}}">
+    <div class="panel-heading">
+      <h4>
+        Assignment Error Check
+        <span id="domCheckBadge" class="badge pull-right">
+          {{#DomTestComplete}}
+            {{#HasDomErrors}}
+              {{DomErrorCount}}
+            {{/HasDomErrors}}
+            {{^HasDomErrors}}
+              <i class="fa fa-check"></i>
+            {{/HasDomErrors}}
+          {{/DomTestComplete}}
+          {{^DomTestComplete}}
+            <i class="fa fa-warning"></i>
+          {{/DomTestComplete}}
+        </span>
+      </h4>
+    </div>
+    <div class="panel-body">
+      <ul id="domErrorsList" style="padding-left:10px;">
+        {{#DomTestComplete}}
+          {{#HasDomErrors}}
+            {{#HasExceptions}}
+              <li style="list-style-type:none;margin-left:-10px;">
+                <h4><i class="fa fa-warning"></i> General Errors</h4>
+              </li>
+            {{/HasExceptions}}
+            {{#Exceptions}}
+              <li>{{.}}</li>
+            {{/Exceptions}}
+            {{#Pages}}
+              {{#HasFailures}}
+                <li style="list-style-type:none;margin-left:-10px;">
+                  <h4><i class="fa fa-file-code-o"></i> {{Name}}</h4>
+                </li>
+                {{#Failures}}
+                  <li>{{Title}}</li>
+                {{/Failures}}
+              {{/HasFailures}}
+            {{/Pages}}
+          {{/HasDomErrors}}
+          {{^HasDomErrors}}
+            <li style="list-style-type:none;margin-left:-10px;">
+              Congratulations! No errors found. Remember that this simply
+              means that the assignment passes a basic "sanity-check". It
+              does not mean that your assignment is 100% correct.
+            </li>
+          {{/HasDomErrors}}
+        {{/DomTestComplete}}
+        {{^DomTestComplete}}
+          <li style="list-style-type:none;margin-left:-10px;">
+            Though the assignment was successfully submitted, we were
+            unable to run the assignment check. This may mean that the
+            assignment had no specific items to check or it may mean
+            that the process failed. You may recheck the assignment
+            by clicking the button above and to the right. If you keep
+            getting this message, then likely there is nothing to check
+            and all is well.
+          </li>
+        {{/DomTestComplete}}
+      </ul>
+    </div>
+  </div>
+</script>
+
+<script type="text/template" id="html-validation-template">
+  <div class="panel panel-{{HtmlPanelClass}}">
+    <div class="panel-heading">
+      <h4>
+        W3C HTML Validation
+        <span id="htmlValidationBadge" class="badge pull-right">
+          {{#HtmlValidationCompleted}}
+            {{#HasHtmlMessages}}
+              {{HtmlMessageCount}}
+            {{/HasHtmlMessages}}
+            {{^HasHtmlMessages}}
+              <i class="fa fa-check"></i>
+            {{/HasHtmlMessages}}
+          {{/HtmlValidationCompleted}}
+          {{^HtmlValidationCompleted}}
+            <i class="fa fa-warning"></i>
+          {{/HtmlValidationCompleted}}
+        </span>
+      </h4>
+    </div>
+    <div class="panel-body">
+      <ul style="padding-left:10px;">
+        {{#HtmlValidationCompleted}}
+          {{#HasHtmlMessages}}
+            {{#Pages}}
+              {{#HasHtmlMessages}}
+                <li style="list-style-type:none;margin-left:-10px;">
+                  <h4><i class="fa fa-file-code-o"></i> {{Name}}</h4>
+                </li>
+                {{#HtmlMessages}}
+                  <li>
+                    line {{LastLine}}: {{Message}}
+                    <div class="auger-extract">
+                      {{Extract1}}<span class="auger-hilite">{{Extract2}}</span>{{Extract3}}
+                    </div>
+                  </li>
+                {{/HtmlMessages}}
+              {{/HasHtmlMessages}}
+            {{/Pages}}
+          {{/HasHtmlMessages}}
+          {{^HasHtmlMessages}}
+            <li style="list-style-type:none;margin-left:-10px;">
+              Congratulations! No HTML Validation issues found.
+            </li>
+          {{/HasHtmlMessages}}
+        {{/HtmlValidationCompleted}}
+        {{^HtmlValidationCompleted}}
+          <li style="list-style-type:none;margin-left:-10px;">
+            Though your assignment was successfully submitted, we were
+            unable to run the W3C HTML Validation. You may recheck the
+            assignment by clicking the button above and to the right.
+          </li>
+        {{/HtmlValidationCompleted}}
+      </ul>
+    </div>
+  </div>
+</script>
+
+<script type="text/template" id="css-validation-template">
+  <div id="cssValidation" class="panel panel-{{CssPanelClass}}">
+    <div class="panel-heading">
+      <h4>
+        W3C CSS Validation
+        <span id="cssValidationBadge" class="badge pull-right">
+          {{#CssValidationCompleted}}
+            {{#HasCssMessages}}
+              {{CssMessageCount}}
+            {{/HasCssMessages}}
+            {{^HasCssMessages}}
+              <i class="fa fa-check"></i>
+            {{/HasCssMessages}}
+          {{/CssValidationCompleted}}
+          {{^CssValidationCompleted}}
+            <i class="fa fa-warning"></i>
+          {{/CssValidationCompleted}}
+        </span>
+      </h4>
+    </div>
+    <div class="panel-body">
+      <ul id="cssValidationList" style="padding-left:10px;">
+        {{#CssValidationCompleted}}
+          {{#HasCssMessages}}
+            {{#Pages}}
+              {{#HasCssMessages}}
+                <li style="list-style-type:none;margin-left:-10px;">
+                  <h4><i class="fa fa-file-text-o"></i> {{Name}}</h4>
+                </li>
+                {{#CssMessages}}
+                  <li>
+                    line {{Line}}: {{Message}}
+                    {{#Context}}
+                      <span class="auger-context">(in {{Context}} selector)</span>
+                    {{/Context}}
+                  </li>
+                {{/CssMessages}}
+              {{/HasCssMessages}}
+            {{/Pages}}
+          {{/HasCssMessages}}
+          {{^HasCssMessages}}
+            <li style="list-style-type:none;margin-left:-10px;">
+              Congratulations! No CSS Validation issues found.
+            </li>
+          {{/HasCssMessages}}
+        {{/CssValidationCompleted}}
+        {{^CssValidationCompleted}}
+          <li style="list-style-type:none;margin-left:-10px;">
+            Though your assignment was successfully submitted, we were
+            unable to run the W3C CSS Validation. You may recheck the
+            assignment by clicking the button above and to the right.
+          </li>
+        {{/CssValidationCompleted}}
+      </ul>
+    </div>
+  </div>
+</script>

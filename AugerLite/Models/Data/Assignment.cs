@@ -24,6 +24,10 @@ namespace Auger.Models.Data
 
         [MaxLength(255)]
         public string AssignmentName { get; set; }
+
+        // TODO: Add IsActive Property to Assignment and rewrite queries to handle proper filtering
+        //public bool IsActive { get; set; } = true;
+
         public DateTime? DueDate { get; set; }
 
         [Index]

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Auger.Models;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -22,38 +23,57 @@ namespace Auger.Controllers
         };
 
         [Authorize]
-        public ActionResult BrowseSelf(string courseId, string assignmentId, string pathInfo)
+        public ActionResult BrowseWork(int courseId, int assignmentId, string pathInfo)
         {
-            var userId = User.GetName();
-            if (string.IsNullOrWhiteSpace(userId))
-            {
-                return new HttpUnauthorizedResult();
-            }
-            return BrowseUser(courseId, userId, assignmentId, pathInfo);
+            return _Browse(WorkRepository.Get(courseId, User.GetName(), assignmentId).FilePath, pathInfo);
+        }
+
+        [CourseAuthorize(UserRoles.InstructorRole)]
+        public ActionResult BrowseUserWork(int courseId, string userName, int assignmentId, string pathInfo)
+        {
+            return _Browse(WorkRepository.Get(courseId, userName, assignmentId).FilePath, pathInfo);
         }
 
         [Authorize]
-        public ActionResult BrowseUser(string courseId, string userId, string assignmentId, string pathInfo)
+        public ActionResult BrowsePlay(int courseId, int playgroundId, string pathInfo)
+        {
+            return _Browse(PlaygroundRepository.Get(courseId, User.GetName(), playgroundId).FilePath, pathInfo);
+        }
+
+        [CourseAuthorize(UserRoles.InstructorRole)]
+        public ActionResult BrowseUserPlay(int courseId, string userName, int assignmentId, string pathInfo)
+        {
+            return _Browse(WorkRepository.Get(courseId, userName, assignmentId).FilePath, pathInfo);
+        }
+
+        [Authorize]
+        public ActionResult BrowseSelf(int courseId, int assignmentId, string pathInfo)
+        {
+            return _Browse(TempDir.GetPath(courseId, User.GetName(), assignmentId), pathInfo);
+        }
+
+        [CourseAuthorize(UserRoles.InstructorRole)]
+        public ActionResult BrowseUser(int courseId, string userName, int assignmentId, string pathInfo)
+        {
+            return _Browse(TempDir.GetPath(courseId, userName, assignmentId), pathInfo);
+        }
+
+        private ActionResult _Browse(string basePath, string pathInfo)
         {
             pathInfo = pathInfo ?? "";
             pathInfo = pathInfo.Replace('/', '\\');
 
-            //var basePath = Repository.FolderName;
-            //var file = $"{basePath}\\{courseId}\\{userId}\\{assignmentId}\\{pathInfo}";
-            var file = $"{TempDir.GetPath(courseId, userId, assignmentId)}\\{pathInfo}";
-            var segments = pathInfo.Split('\\');
-            if (segments.Length > 0 && segments.Last().Contains('.'))
+            var fullPath = $"{basePath}\\{pathInfo}";
+
+            if (System.IO.File.Exists(fullPath))
             {
-                if (System.IO.File.Exists(file))
-                {
-                    return File(file, MimeMapping.GetMimeMapping(file));
-                }
+                return File(fullPath, MimeMapping.GetMimeMapping(fullPath));
             }
             else
             {
                 foreach (var def in defaultFiles)
                 {
-                    var test = $"{file}\\{def}";
+                    var test = $"{fullPath}\\{def}";
                     if (System.IO.File.Exists(test))
                     {
                         return File(test, MimeMapping.GetMimeMapping(test));

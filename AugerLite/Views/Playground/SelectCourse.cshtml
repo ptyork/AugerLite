@@ -1,6 +1,8 @@
 ﻿@model CourseSelectViewModel
 @{
     ViewBag.Title = "Choose Course";
+    var activeCourses = Model.Courses.Where(c => c.IsActive).OrderByDescending(c => c.DateCreated);
+    var inactiveCourses = Model.Courses.Where(c => !c.IsActive).OrderByDescending(c => c.DateCreated);
 }
 
 @section Breadcrumbs {
@@ -10,22 +12,62 @@
 
 <h3>Choose Course</h3>
 
-<div class="row btn-list">
-  @if (Model.Courses.Any())
-  {
-    foreach (Course c in Model.Courses)
+@if (!inactiveCourses.Any())
+{
+  <div class="row panel course-list">
+    @foreach (var course in activeCourses)
     {
-      <div class="col-md-3 col-sm-4 col-xs-12" style="padding: 10px;">
-        <a href="~/Playground/SelectCourse/@c.CourseId" class="btn btn-primary btn-selector" role="button">
-          <h4 style="">@c.CourseTitle</h4>
-        </a>
-      </div>
+      <a href="~/Playground/SelectCourse/@course.CourseId" class="col-md-3 col-sm-4 list-group-item list-group-item-info">
+        <h5>@course.ShortName</h5>
+        <div style="padding:5px">
+          <div style="margin-bottom:5px">@course.CourseTitle</div>
+          <div class="small"><i>(created: @course.DateCreated.ToShortDateString())</i></div>
+        </div>
+      </a>
     }
-  }
-  else
-  {
-    <p>No courses found</p>
-  }
-</div>
-
+  </div>
+}
+else
+{
+  <div class="row">
+    <div class="col-md-6">
+      <div class="panel panel-primary panel-list course-list">
+        <div class="panel-heading">
+          <h4>Active Courses</h4>
+        </div>
+        <div class="panel-body">
+          @foreach (var course in activeCourses)
+          {
+            <a href="~/Playground/SelectCourse/@course.CourseId" class="col-md-6 col-lg-4 list-group-item list-group-item-info">
+              <h5>@course.ShortName</h5>
+              <div style="padding:5px">
+                <div style="margin-bottom:5px">@course.CourseTitle</div>
+                <div class="small"><i>(created: @course.DateCreated.ToShortDateString())</i></div>
+              </div>
+            </a>
+          }
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="panel panel-warning panel-list course-list">
+        <div class="panel-heading">
+          <h4>Inactive Courses</h4>
+        </div>
+        <div class="panel-body">
+          @foreach (var course in inactiveCourses)
+          {
+            <a href="~/Playground/SelectCourse/@course.CourseId" class="col-md-6 col-lg-4 list-group-item list-group-item-warning">
+              <h5>@course.ShortName</h5>
+              <div style="padding:5px">
+                <div style="margin-bottom:5px">@course.CourseTitle</div>
+                <div class="small"><i>(created: @course.DateCreated.ToShortDateString())</i></div>
+              </div>
+            </a>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
 <div class="clearfix"></div>

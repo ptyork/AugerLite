@@ -13,9 +13,8 @@
 }
 
 @section Head {
-  <script src="~/Scripts/moment.js"></script>
-  <script src="~/Scripts/bootstrap-datetimepicker.js"></script>
-  <link rel="stylesheet" href="~/Content/bootstrap-datetimepicker.css" />
+  @Scripts.Render("~/scripts/datepicker")
+  @Styles.Render("~/styles/datepicker")
 }
 
 <h2>Edit Assignment Properties</h2>

@@ -5,10 +5,6 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AugerLite", "AugerLite\AugerLite.csproj", "{34A934BC-12BD-4DEC-855E-D9D543F745D2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LtiLibrary.Core", "..\LtiLibrary\LtiLibrary.Core\LtiLibrary.Core.csproj", "{75D41EB6-F34B-4973-86EB-11ABFEE995B0}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LtiLibrary.AspNet", "..\LtiLibrary\LtiLibrary.AspNet\LtiLibrary.AspNet.csproj", "{E4935E79-A08F-4559-BC3B-B8840F30BF56}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,14 +15,6 @@ Global
 		{34A934BC-12BD-4DEC-855E-D9D543F745D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34A934BC-12BD-4DEC-855E-D9D543F745D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{34A934BC-12BD-4DEC-855E-D9D543F745D2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{75D41EB6-F34B-4973-86EB-11ABFEE995B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{75D41EB6-F34B-4973-86EB-11ABFEE995B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{75D41EB6-F34B-4973-86EB-11ABFEE995B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{75D41EB6-F34B-4973-86EB-11ABFEE995B0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E4935E79-A08F-4559-BC3B-B8840F30BF56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E4935E79-A08F-4559-BC3B-B8840F30BF56}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E4935E79-A08F-4559-BC3B-B8840F30BF56}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E4935E79-A08F-4559-BC3B-B8840F30BF56}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

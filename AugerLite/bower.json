@@ -1,0 +1,24 @@
+{
+  "name": "asp.net",
+  "private": true,
+  "dependencies": {
+    "jquery": "~3.2.1",
+    "bootstrap": "3.3.6",
+    "font-awesome": "4.6.1",
+    "moment": "2.13.0",
+    "mustache.js": "2.2.1",
+    "mocha": "2.4.5",
+    "eonasdan-bootstrap-datetimepicker": "4.17.37",
+    "bootstrap-switch": "3.3.2",
+    "chai": "3.5.0",
+    "respond": "1.4.2",
+    "jquery-validation-unobtrusive": "v3.2.6",
+    "es6-promise": "v4.1.1",
+    "chai-jquery": "2.0.1",
+    "ace-builds": "v1.2.8",
+    "srcdoc-polyfill": "v1.0.0"
+  },
+  "resolutions": {
+    "jquery": ">=1.9.0"
+  }
+}

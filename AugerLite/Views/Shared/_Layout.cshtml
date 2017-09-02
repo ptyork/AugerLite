@@ -37,17 +37,12 @@
   <title>Auger - @ViewBag.Title</title>
 
   <link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
-  <link rel="stylesheet" href="~/Content/font-awesome/font-awesome.min.css" />
-  <link rel="stylesheet" href="~/Content/bootstrap/bootstrap-@(theme).min.css" />
-  <link rel="stylesheet" href="~/Content/auger.css" />
-  <link rel="stylesheet" href="~/Content/auger-@(theme).css" />
 
-  @Scripts.Render("~/bundles/modernizr")
-  @Scripts.Render("~/bundles/jquery")
-  @Scripts.Render("~/bundles/bootstrap")
-  <script src="~/Scripts/mustache.min.js"></script>
-  <script src="~/Scripts/es6-promise.auto.min.js"></script>
-  <script src="~/Scripts/auger-ui.js"></script>
+  @Styles.Render("~/styles/core-" + theme)
+
+  @Scripts.Render("~/scripts/compat")
+  @Scripts.Render("~/scripts/core")
+
 
   @RenderSection("head", required: false)
 </head>
@@ -109,13 +104,13 @@
 
   @if (IsSectionDefined("Breadcrumbs"))
   {
-      <div class="container-fluid">
-        <div class="breadcrumb-container" style="padding-top:5px">
-          <ol class="breadcrumb">
-            @RenderSection("Breadcrumbs", required: false)
-          </ol>
-        </div>
+    <div class="container-fluid">
+      <div class="breadcrumb-container" style="padding-top:5px">
+        <ol class="breadcrumb">
+          @RenderSection("Breadcrumbs", required: false)
+        </ol>
       </div>
+    </div>
   }
   <div class="container-fluid body-content">
     @RenderBody()

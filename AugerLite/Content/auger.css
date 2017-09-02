@@ -115,6 +115,7 @@ iframe {
 }
 .ide .panel, .ide .panel-heading {
     border-radius: unset;
+    border: 0;
 }
 .ide .panel-body {
     padding: 0;

@@ -103,8 +103,8 @@
     </div>
   </div>
   @{ 
-      var active = Model.Enrollments.Where(e => e.IsActive);
-      var inactive = Model.Enrollments.Where(e => !e.IsActive);
+      var active = Model.Enrollments.Where(e => e.IsActive).OrderBy(e => e.UserName);
+      var inactive = Model.Enrollments.Where(e => !e.IsActive).OrderBy(e => e.UserName);
   }
   <div class="col-sm-4">
     <div class="panel panel-primary panel-list">

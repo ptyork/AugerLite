@@ -1,17 +1,20 @@
 ﻿@model PlaygroundEditViewModel
 @{
-  ViewBag.Title = "Edit Playground";
-  ViewBag.BodyClass = "full";
-  ViewBag.CanSubmit = false;
+    ViewBag.Title = "Edit Playground";
+    ViewBag.BodyClass = "full";
+    ViewBag.CanSubmit = false;
+    ViewBag.CanShare = Model.IsInstructorForCourse;
+    ViewBag.IsShared = Model.Playground.IsShared;
+    ViewBag.IsReadOnly = !Model.Playground.IsOwner;
 }
 
 @section Head {
   <script>
     var _basePath = '@Url.Content("~/Playground/")';
-    var _browseRoot = '@Url.Content($"~/BrowsePlay/{Model.Course.CourseId}/{Model.Playground.PlaygroundId}")';
+    var _browseRoot = '@Url.Content($"~/BrowsePlay/{Model.Playground.CourseId}/{Model.Playground.UserName}/{Model.Playground.PlaygroundId}")';
     var _baseDataObject = {
-      userName: '@User.GetName()',
-      courseId: @Model.Course.CourseId,
+      userName: '@Model.Playground.UserName',
+      courseId: @Model.Playground.CourseId,
       repositoryId: @Model.Playground.PlaygroundId,
       playgroundId: @Model.Playground.PlaygroundId
     };
@@ -22,7 +25,7 @@
   <li><a href="~/">Auger Home</a>
   <li><a href="~/Playground/SelectCourse">@Model.Course.ShortName</a>
   <li><a href="~/Playground">Playgrounds</a>
-  <li>@Model.Playground.Name
+  <li>@Model.Playground.Name <i>@(Model.Playground.IsOwner ? "" : "(SHARED)")</i>
 }
 
 <div class="visible-xs">

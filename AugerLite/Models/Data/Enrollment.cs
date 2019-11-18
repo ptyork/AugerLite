@@ -29,27 +29,31 @@ namespace Auger.Models.Data
         [MaxLength(128)]
         public string UserName { get; set; }
 
-        private List<string> _roles = new List<string>();
-        private string _allRoles = null;
+        private HashSet<string> _roles = new HashSet<string>();
+        [NotMapped]
+        public HashSet<string> Roles
+        {
+            get { return _roles; }
+        }
+
         [MaxLength(128)]
         public string AllRoles
         {
             get
             {
-                return _allRoles;
+                return string.Join(",", _roles);
             }
             set
             {
-                var possibleRoles = value.Split(',');
+                var possibleRoles = value.ToLowerInvariant().Split(',');
                 foreach (var possibleRole in possibleRoles)
                 {
-                    var role = possibleRole.ToLowerInvariant().Trim();
-                    if (UserRoles.AllRolesLower.Contains(role))
+                    var role = possibleRole.Trim();
+                    if (UserRoles.IsRole(role))
                     {
                         _roles.Add(role);
                     }
                 }
-                _allRoles = string.Join(",", _roles);
             }
         }
         
@@ -57,15 +61,9 @@ namespace Auger.Models.Data
         
         public virtual ICollection<StudentAssignment> StudentAssignments { get; set; }
 
-        [NotMapped]
-        public IEnumerable<string> Roles
-        {
-            get { return _roles; }
-        }
-
         public bool IsInRole(string role)
         {
-            return _roles.Contains(role?.ToLowerInvariant());
+            return _roles.ContainsIgnoreCase(role);
         }
 
     }

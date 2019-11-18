@@ -175,7 +175,7 @@ namespace Auger
         {
             string commitId = null;
             var now = DateTime.Now;
-            message += $"[{now.ToShortDateString()} {now.ToShortTimeString()}] {message}";
+            message = $"[{now.ToShortDateString()} {now.ToShortTimeString()}] {message}";
 
             using (var repo = new LibGit2Sharp.Repository(_repositoryFolderName))
             {
@@ -244,13 +244,13 @@ namespace Auger
             return commitId;
         }
 
-        public string CommitFromRepository(Repository otherRepository)
+        public string CommitFromRepository(Repository otherRepository, string message = "")
         {
             try
             {
                 Checkout();   // Move HEAD to LATEST checkout
                 CopyFromRepository(otherRepository);
-                return Commit();
+                return Commit(message);
             }
             catch (Exception e)
             {
@@ -426,7 +426,7 @@ namespace Auger
             });
         }
 
-        private void _Retry(Action func)
+        protected static void _Retry(Action func)
         {
             _Retry(() => {
                 func();
@@ -434,7 +434,7 @@ namespace Auger
             });
         }
 
-        private string _Retry(Func<string> func)
+        private static string _Retry(Func<string> func)
         {
             int retryCount = 0;
             while (true)

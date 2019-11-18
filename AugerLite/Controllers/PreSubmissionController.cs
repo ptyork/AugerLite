@@ -69,13 +69,13 @@ namespace Auger.Controllers
         [HttpPost]
         public JsonResult ValidateHTML(PostFile file)
         {
-            return Json(W3CValidator.ValidateHTML(file.FileName, file.Text));
+            return Json(W3CValidator.ValidateSingleFile(file.FileName, file.Text));
         }
 
         [HttpPost]
         public JsonResult ValidateCSS(PostFile file)
         {
-            return Json(W3CValidator.ValidateCSS(file.FileName, file.Text));
+            return Json(W3CValidator.ValidateSingleFile(file.FileName, file.Text));
         }
 
         protected override void Dispose(bool disposing)

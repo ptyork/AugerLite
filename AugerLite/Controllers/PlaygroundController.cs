@@ -33,6 +33,12 @@ namespace Auger.Controllers
                 var user = ApplicationUser.Current;
 
                 vm.Playgrounds = PlaygroundRepository.GetAllPlaygrounds(course.CourseId, user.UserName);
+                vm.SharedPlaygrounds = PlaygroundRepository.GetSharedPlaygrounds(course.CourseId);
+                foreach (var pg in vm.SharedPlaygrounds)
+                {
+                    pg.IsOwner = user.UserName == pg.UserName;
+                }
+                vm.IsInstructorForCourse = user.IsInstructorForCourse(course);
 
                 return View(vm);
             }
@@ -155,7 +161,7 @@ namespace Auger.Controllers
             }
         }
 
-        public ActionResult Edit(int id)
+        public ActionResult Edit(int id, string secondaryId)
         {
             Course course = _GetCourse();
             if (course == null)
@@ -163,17 +169,32 @@ namespace Auger.Controllers
                 return RedirectToAction("SelectCourse");
             }
 
-            var user = ApplicationUser.Current;
-
-            var playground = PlaygroundRepository.GetPlayground(course.CourseId, user.UserName, id);
-
             try
             {
+                var user = ApplicationUser.Current;
+                var isOwner = true;
+                if (!string.IsNullOrWhiteSpace(secondaryId))
+                {
+                    if (user.UserName != secondaryId)
+                    {
+                        user = ApplicationUser.FromUserName(secondaryId);
+                        isOwner = false;
+                    }
+                }
+                if (user == null)
+                {
+                    return new HttpNotFoundResult();
+                }
+
+                var playground = PlaygroundRepository.GetPlayground(course.CourseId, user.UserName, id);
+                playground.IsOwner = isOwner;
+
                 var model = new PlaygroundEditViewModel()
                 {
                     Course = course,
                     User = user,
-                    Playground = playground
+                    Playground = playground,
+                    IsInstructorForCourse = user.IsInstructorForCourse(course)
                 };
 
                 return View(model);
@@ -183,6 +204,35 @@ namespace Auger.Controllers
                 Elmah.ErrorSignal.FromCurrentContext().Raise(ex);
                 return new HttpStatusCodeResult(HttpStatusCode.InternalServerError, ex.Message);
             }
+        }
+
+        public class SetIsSharedPostData : IDEPostData
+        {
+            public bool IsShared { get; set; }
+        }
+
+        public ActionResult SetIsShared(SetIsSharedPostData data)
+        {
+            Course course = _GetCourse();
+            if (course == null)
+            {
+                return new HttpNotFoundResult();
+            }
+
+            if (User?.GetName() != data.UserName)
+            {
+                return new HttpUnauthorizedResult();
+            }
+
+            var repo = PlaygroundRepository.Get(course.CourseId, data.UserName, data.RepositoryId);
+            if (repo == null)
+            {
+                return new HttpNotFoundResult();
+            }
+
+            repo.SetIsShared(data.IsShared);
+
+            return Json(repo.GetIsShared());
         }
     }
 }

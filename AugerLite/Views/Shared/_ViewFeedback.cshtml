@@ -1,8 +1,16 @@
-﻿<div class="row full-height">
+﻿@{ 
+    var showDebug = ViewBag.ShowDebug == true;
+}
+<script>
+  var _showDebug = @(showDebug ? "true" : "false");
+</script>
+
+<div class="row full-height">
   <div class="full-height-overflow" id="feedback-container">
     <div class="col-md-4" id="dom-check-container"></div>
     <div class="col-md-4" id="html-validation-container"></div>
     <div class="col-md-4" id="css-validation-container"></div>
+    <div class="col-lg-12" id="debug-container"></div>
   </div>
 </div>
 
@@ -34,9 +42,11 @@
     this.Failures = [];
     this.HtmlMessages = [];
     this.CssMessages = [];
+    this.IsNewCssFormat = false;
     this.HasFailures = function () { return this.Failures.length > 0; };
     this.HasHtmlMessages = function () { return this.HtmlMessages.length > 0; };
-    this.HasCssMessages = function () { return this.CssMessages.length > 0; };
+    this.HasCssMessages = function () { return this.CssMessages.length > 0 };
+    this.HasDebugMessages = function () { return this.DebugMessages.length > 0; };
   }
   function GetPage(fb, name) {
     if (!fb.Pages) {
@@ -56,6 +66,7 @@
     $('#dom-check-container').empty();
     $('#html-validation-container').empty();
     $('#css-validation-container').empty();
+    $('#debug-container').empty();
     showLoadingDiv($('#feedback-container'));
   });
 
@@ -86,7 +97,9 @@
 
     fb.HtmlPanelClass = "danger";
     if (fb.HtmlValidationCompleted) {
-      fb.HtmlMessages = fb.W3CHtmlValidationMessages.filter(function (m) { return m.Type && m.Type.toLowerCase() === 'error' });
+      fb.HtmlMessages = fb.W3CHtmlValidationMessages.filter(
+        function (m) { return m.Type && m.Type.toLowerCase() === 'error' }
+      );
       fb.HtmlMessageCount = fb.HtmlMessages.length;
       fb.HasHtmlMessages = fb.HtmlMessageCount > 0;
       if (!fb.HasHtmlMessages) fb.HtmlPanelClass = "success";
@@ -109,24 +122,54 @@
 
     fb.CssPanelClass = "danger";
     if (fb.CssValidationCompleted) {
-      fb.CssMessages = fb.W3CCssValidationMessages.filter(function (m) { return m.Type && m.Type.toLowerCase() === 'error' });
-      fb.CssErrorCount = fb.CssMessages.length;
-      fb.HasCssErrors = fb.CssErrorCount > 0;
-      if (!fb.HasCssErrors) fb.CssPanelClass = "success";
-      for (var i = 0; i < fb.CssMessages.length; i++) {
-        var message = fb.CssMessages[i];
-        page = GetPage(fb, message.Page);
-        page.CssMessages.push(message);
+      if (fb.W3CCssValidationMessagesNew.length > 0) {
+        fb.CssMessages = fb.W3CCssValidationMessagesNew.filter(
+          function (m) { return m.Type && m.Type.toLowerCase() === 'error' }
+        );
+        fb.CssMessageCount = fb.CssMessages.length;
+        fb.HasCssMessages = fb.CssMessageCount > 0;
+        if (!fb.HasCssMessages) fb.CssPanelClass = "success";
+        for (var i = 0; i < fb.CssMessages.length; i++) {
+          var message = fb.CssMessages[i];
+          if (!!message.Extract) {
+            message.Extract1 = message.Extract;
+            var start = message.HiliteStart;
+            var len = message.HiliteLength;
+            if (start >= 0 && len >= 0) {
+              message.Extract1 = message.Extract.substr(0, start);
+              message.Extract2 = message.Extract.substr(start, len);
+              message.Extract3 = message.Extract.substr(start + len);
+            }
+          }
+          page = GetPage(fb, message.Page);
+          page.IsNewCssFormat = true;
+          page.CssMessages.push(message);
+        }
+      } else {
+        fb.CssMessages = fb.W3CCssValidationMessages.filter(function (m) { return m.Type && m.Type.toLowerCase() === 'error' });
+        fb.CssErrorCount = fb.CssMessages.length;
+        fb.HasCssErrors = fb.CssErrorCount > 0;
+        if (!fb.HasCssErrors) fb.CssPanelClass = "success";
+        for (var i = 0; i < fb.CssMessages.length; i++) {
+          var message = fb.CssMessages[i];
+          page = GetPage(fb, message.Page);
+          page.CssMessages.push(message);
+        }
       }
     }
+
+    fb.DebugMessageCount = fb.DebugMessages.length;
+    fb.HasDebugMessages = fb.DebugMessageCount > 0;
 
     var domTemplate = $("#dom-check-template").html();
     var htmlTemplate = $("#html-validation-template").html();
     var cssTemplate = $("#css-validation-template").html();
+    var debugTemplate = $("#debug-template").html();
 
     $('#dom-check-container').html(Mustache.render(domTemplate, fb));
     $('#html-validation-container').html(Mustache.render(htmlTemplate, fb));
     $('#css-validation-container').html(Mustache.render(cssTemplate, fb));
+    if (_showDebug) $('#debug-container').html(Mustache.render(debugTemplate, fb));
 
     hideLoadingDiv($('#feedback-container'));
   });
@@ -231,9 +274,7 @@
                 {{#HtmlMessages}}
                   <li>
                     line {{LastLine}}: {{Message}}
-                    <div class="auger-extract">
-                      {{Extract1}}<span class="auger-hilite">{{Extract2}}</span>{{Extract3}}
-                    </div>
+                    <pre class="auger-extract">...{{Extract1}}<span class="auger-hilite">{{Extract2}}</span>{{Extract3}}...</pre>
                   </li>
                 {{/HtmlMessages}}
               {{/HasHtmlMessages}}
@@ -286,14 +327,24 @@
                 <li style="list-style-type:none;margin-left:-10px;">
                   <h4><i class="fa fa-file-text-o"></i> {{Name}}</h4>
                 </li>
-                {{#CssMessages}}
-                  <li>
-                    line {{Line}}: {{Message}}
-                    {{#Context}}
-                      <span class="auger-context">(in {{Context}} selector)</span>
-                    {{/Context}}
-                  </li>
-                {{/CssMessages}}
+                {{#IsNewCssFormat}}
+                  {{#CssMessages}}
+                    <li>
+                      line {{LastLine}}: {{Message}}
+                      <pre class="auger-extract">...{{Extract1}}<span class="auger-hilite">{{Extract2}}</span>{{Extract3}}...</pre>
+                    </li>
+                  {{/CssMessages}}
+                {{/IsNewCssFormat}}
+                {{^IsNewCssFormat}}
+                  {{#CssMessages}}
+                    <li>
+                      line {{Line}}: {{Message}}
+                      {{#Context}}
+                        <span class="auger-context">(in {{Context}} selector)</span>
+                      {{/Context}}
+                    </li>
+                  {{/CssMessages}}
+                {{/IsNewCssFormat}}
               {{/HasCssMessages}}
             {{/Pages}}
           {{/HasCssMessages}}
@@ -313,4 +364,26 @@
       </ul>
     </div>
   </div>
+</script>
+
+<script type="text/template" id="debug-template">
+  {{#HasDebugMessages}}
+  <div id="cssValidation" class="panel panel-warning">
+    <div class="panel-heading">
+      <h4>
+        DEBUG MESSAGES
+        <span id="cssValidationBadge" class="badge pull-right">
+          {{DebugMessageCount}}
+        </span>
+      </h4>
+    </div>
+    <div class="panel-body">
+      <ul id="debugList" style="padding-left:10px;">
+        {{#DebugMessages}}
+          <li>{{.}}</li>
+        {{/DebugMessages}}
+      </ul>
+    </div>
+  </div>
+  {{/HasDebugMessages}}
 </script>

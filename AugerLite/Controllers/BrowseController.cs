@@ -10,7 +10,8 @@ using System.Web.Mvc;
 
 namespace Auger.Controllers
 {
-    public class BrowseController : Controller
+    [OutputCache(NoStore = true, Duration = 0)]
+    public class BrowseController : AugerControllerBase
     {
         private static string[] defaultFiles =
         {
@@ -35,15 +36,31 @@ namespace Auger.Controllers
         }
 
         [Authorize]
-        public ActionResult BrowsePlay(int courseId, int playgroundId, string pathInfo)
+        public ActionResult BrowsePlay(int courseId, string userName, int playgroundId, string pathInfo)
         {
-            return _Browse(PlaygroundRepository.Get(courseId, User.GetName(), playgroundId).FilePath, pathInfo);
-        }
+            var repo = PlaygroundRepository.Get(courseId, userName, playgroundId);
+            var user = ApplicationUser.Current;
 
-        [CourseAuthorize(UserRoles.InstructorRole)]
-        public ActionResult BrowseUserPlay(int courseId, string userName, int assignmentId, string pathInfo)
-        {
-            return _Browse(WorkRepository.Get(courseId, userName, assignmentId).FilePath, pathInfo);
+            // if this is the user's own repository OR the user is a super user OR the repository is shared,
+            // then the repository should be browsable
+            if (string.Equals(user.UserName, userName, StringComparison.OrdinalIgnoreCase) || user.IsInRole(UserRoles.SuperUserRole) || repo.GetIsShared())
+            {
+                return _Browse(repo.FilePath, pathInfo);
+            }
+            // also allow instructors to view any repo for their courses
+            try
+            {
+                var course = _GetCourse(courseId);
+                if (course != null && user.IsInstructorForCourse(course))
+                {
+                    return _Browse(repo.FilePath, pathInfo);
+                }
+            }
+            catch (Exception ex)
+            {
+                Elmah.ErrorSignal.FromCurrentContext().Raise(ex);
+            }
+            return new HttpNotFoundResult();
         }
 
         [Authorize]

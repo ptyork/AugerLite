@@ -54,10 +54,15 @@ namespace Auger
                             submission.CommitId = commitId;
                             submission.Succeeded = true;
 
-                            SubmissionTester.TestSubmission(submission);
-
                             db.StudentSubmissions.Add(submission);
                             studentAssignment.HasSubmission = true;
+
+                            db.SaveChanges();
+
+                            using (var t = new SubmissionTester(submission))
+                            {
+                                t.TestAll();
+                            }
 
                             db.SaveChanges();
                         }

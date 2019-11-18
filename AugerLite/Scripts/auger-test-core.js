@@ -16,12 +16,8 @@
     tests: [],
     passes: [],
     pending: [],
-    failures: [],
-    debugMessages: []
+    failures: []
   };
-
-  // Array of debug messages to append to test results
-  var _debugMessages = [];
 
   // Initialize files names and paths based on current document
   {
@@ -30,7 +26,7 @@
     var href = window.location.href;
     var hrefparts = href.split('/');
     Auger._pageName = hrefparts[hrefparts.length - 1];
-    if (Auger._pageName.length == 0) {
+    if (Auger._pageName.length === 0) {
       Auger._pageName = DEFAULT_PAGE_NAME;
     }
 
@@ -49,27 +45,42 @@
   // Auger.Init: Initialize Auger's testing environment (Mocha, Chai, etc.)
   Auger.Init = function (callback) {
     "use strict";
+    //console.debug('enter Init');
+
     function _loadDependencies(innerCallback) {
       if (typeof jQuery === 'undefined') {
-        Auger.LoadScript(Auger._augerUrlBase + 'lib/jquery/jquery.min.js', function () {
+        var url = Auger._augerUrlBase + 'lib/jquery/jquery.js';
+        //console.debug('loading ' + url);
+        Auger.LoadScript(url, function () {
+          //console.debug('loaded ' + url);
           _loadDependencies(innerCallback);
         });
         return;
       }
       if (typeof Mocha === 'undefined') {
-        Auger.LoadScript(Auger._augerUrlBase + "lib/mocha/mocha.js", function () {
+        var url = Auger._augerUrlBase + 'lib/mocha/mocha.js';
+        //console.debug('loading ' + url);
+        Auger.LoadScript(url, function () {
+          //console.debug('loaded ' + url);
           _loadDependencies(innerCallback);
         });
         return;
       }
       if (typeof chai === 'undefined') {
-        Auger.LoadScript(Auger._augerUrlBase + "lib/chai/chai.js", function () {
-          Auger.LoadScript(Auger._augerUrlBase + "lib/chai-jquery/chai-jquery.js", function () {
+        var url = Auger._augerUrlBase + 'lib/chai/chai.js';
+        //console.debug('loading ' + url);
+        Auger.LoadScript(url, function () {
+          //console.debug('loaded ' + url);
+          var url = Auger._augerUrlBase + 'lib/chai-jquery/chai-jquery.js';
+          //console.debug('loading ' + url);
+          Auger.LoadScript(url, function () {
+            //console.debug('loaded ' + url);
             _loadDependencies(innerCallback);
           });
         });
         return;
       }
+      //console.debug('all dependencies loaded');
       innerCallback();
     }
 
@@ -187,9 +198,7 @@
 
   // Auger.LoadScript: Simple utility function to load a given script asynchronously
   Auger.LoadScript = function (url, callback) {
-    //if (url.lastIndexOf(Auger._augerUrlBase, 0) === 0) {
-    //    url = Auger._augerUrlBase + 'BrowseAny?url=' + encodeURIComponent(url);
-    //}
+    // Use a proxy to load any resources
     url = Auger._augerUrlBase + 'BrowseAny?url=' + encodeURIComponent(url);
     if (typeof jQuery === 'undefined') {
       var script = document.createElement('script');
@@ -197,75 +206,56 @@
       script.src = url;
       if (script.readyState) { //IE
         script.onreadystatechange = function () {
-          if (script.readyState == 'loaded' || script.readyState == 'complete') {
+          if (script.readyState === 'loaded' || script.readyState === 'complete') {
             script.onreadystatechange = null;
-            callback(script);
+            callback();
           }
         };
       } else { //Others
         script.onload = function () {
-          callback(script);
+          callback();
         }
         script.onerror = function () {
+          console.error('ERROR loading ' + url);
           alert('ERROR loading ' + url);
         }
       }
       document.getElementsByTagName('head')[0].appendChild(script);
     } else {
-      $.ajax({
+      jQuery.ajax({
         url: url,
         dataType: "script",
         cache: true,
         success: callback
       }).fail(function () {
+        console.error('ERROR loading ' + url);
         alert('ERROR loading ' + url);
       });;
     }
   };
 
+  // load a test suite from the specified url and run it
   Auger.RunTest = function (url, callback) {
+    //console.debug('enter RunTest');
     // run inside of an onload event to insure that everything else is done
     $(function () {
-      // HACK: Remove the auger footer if the GUI is loaded
-      var $augerFooter = $('#auger-footer');
-      if ($augerFooter.length > 0) {
-        $augerFooter.remove();
-      }
-
-      // start with a fresh _debugMessages array
-      _debugMessages = [];
-
       // clear out the suites and tests so that we ONLY run the new ones
       mocha.suite.suites.splice(0, mocha.suite.suites.length);
       mocha.suite.tests.splice(0, mocha.suite.tests.length);
 
       // load and run this test suite
       $.getScript(url, function () {
-        //mocha.checkLeaks();
-        if (mocha.suite.total() > 0) {
-          var runner = mocha.run();
-          runner.on('end', function () {
-            var results = runner.testResults;
-            results.debugMessages = _debugMessages;
-            returnResults(results);
-          });
-        } else {
-          returnResults(_emptyTestResults);
-        }
+        Auger.RunTestEmbedded(callback);
       }).fail(function (jqxhr, settings, exception) {
-        returnResults(_emptyTestResults);
+        console.error('ERROR loading test: ' + url);
+        callback(_emptyTestResults);
       });
-
-      function returnResults(results) {
-        if ($augerFooter.length > 0) {
-          $augerFooter.appendTo('body');
-        }
-        callback(results);
-      }
     });
   };
 
+  // run any currently loaded test suites
   Auger.RunTestEmbedded = function (callback) {
+    //console.debug('enter RunTestEmbedded');
     // run inside of an onload event to insure that everything else is done
     $(function () {
       //mocha.checkLeaks();
@@ -273,24 +263,19 @@
         var runner = mocha.run();
         runner.on('end', function () {
           var results = runner.testResults;
-          results.debugMessages = _debugMessages;
           callback(results);
         });
       } else {
+        console.warn('no tests defined');
         callback(_emptyTestResults);
       }
     });
   };
 
-  Auger.Debug = function (message) {
-    console.log(message);
-    _debugMessages.push(message);
-  }
-
   Auger.Rgb2Hex = function (rgb) {
     "use strict";
     rgb = rgb.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
-    if (rgb.indexOf('rgb') == -1) {
+    if (rgb.indexOf('rgb') === -1) {
       return rgb;
     } else {
       rgb = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+))?\)$/);
@@ -305,7 +290,7 @@
     "use strict";
     var r, g, b;
     hex = hex.replace('#', '');
-    if (hex.length == 3) {
+    if (hex.length === 3) {
       r = hex.substr(0, 1) + hex.substr(0, 1);
       g = hex.substr(1, 1) + hex.substr(1, 1);
       b = hex.substr(2, 1) + hex.substr(2, 1);

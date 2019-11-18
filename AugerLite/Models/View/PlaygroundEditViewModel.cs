@@ -14,5 +14,6 @@ namespace Auger.Models.View
         public ApplicationUser User { get; set; } = null;
         public Course Course { get; set; } = null;
         public Playground Playground { get; set; } = null;
+        public bool IsInstructorForCourse { get; set; } = false;
     }
 }

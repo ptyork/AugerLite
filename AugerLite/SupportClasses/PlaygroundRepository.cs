@@ -52,6 +52,35 @@ namespace Auger
             return playgrounds;
         }
 
+        public static List<Playground> GetSharedPlaygrounds(int courseId)
+        {
+            if (string.IsNullOrWhiteSpace(_basePath))
+            {
+                throw new InvalidOperationException("This repository type has not been initialized.");
+            }
+
+            var playgrounds = new List<Playground>();
+            var fileName = $"{_basePath}\\{courseId}\\.shared-playgrounds.txt";
+            if (File.Exists(fileName))
+            {
+                var sharedText = File.ReadAllText(fileName);
+                var sharedList = sharedText.Split(',');
+                foreach (var path in sharedList)
+                {
+                    var parts = path.Split('\\');
+                    if (parts.Length != 2) continue;
+                    var userName = parts[0];
+                    int playgroundId = 0;
+                    if (int.TryParse(parts[1], out playgroundId))
+                    {
+                        var repo = new PlaygroundRepository(courseId, userName, playgroundId);
+                        playgrounds.Add(repo.GetPlayground());
+                    }
+                }
+            }
+            return playgrounds;
+        }
+
         public static PlaygroundRepository Create(int courseId, string userName, string name)
         {
             if (string.IsNullOrWhiteSpace(_basePath))
@@ -79,7 +108,14 @@ namespace Auger
 
         public static void Delete(PlaygroundRepository repo)
         {
-            repo.Folder.Delete(true);
+            repo.SetIsShared(false);
+            _Retry(() => {
+                foreach (var info in repo.Folder.GetFileSystemInfos("*", SearchOption.AllDirectories))
+                {
+                    info.Attributes = FileAttributes.Normal;
+                }
+                repo.Folder.Delete(true);
+            });
         }
 
         public override string BasePath
@@ -87,9 +123,17 @@ namespace Auger
             get { return _basePath; }
         }
 
+        public string RelativePath
+        {
+            get
+            {
+                return $"{UserName}\\{RepositoryId}";
+            }
+        }
+
         public PlaygroundRepository(int courseId, string userName, int repositoryId, bool create = false)
             : base(courseId, userName, repositoryId, create)
-        {   
+        {
         }
 
         public Playground GetPlayground()
@@ -129,6 +173,54 @@ namespace Auger
                 attributes = File.GetAttributes(fileName) | FileAttributes.Hidden;
                 File.SetAttributes(fileName, attributes);
             }
+        }
+
+        public bool GetIsShared()
+        {
+            bool isShared = false;
+
+            var fileName = $"{_basePath}\\{this.CourseId}\\.shared-playgrounds.txt";
+            if (File.Exists(fileName))
+            {
+                var sharedText = File.ReadAllText(fileName);
+                var sharedList = sharedText.Split(',');
+                isShared = sharedList.ContainsIgnoreCase(this.RelativePath);
+            }
+            return isShared;
+        }
+
+        public void SetIsShared(bool isShared)
+        {
+            var fileName = $"{_basePath}\\{this.CourseId}\\.shared-playgrounds.txt";
+            List<string> sharedList = new List<string>();
+            if (File.Exists(fileName))
+            {
+                var sharedText = File.ReadAllText(fileName);
+                sharedList.AddRange(sharedText.Split(','));
+            }
+            if (isShared)
+            {
+                if (!sharedList.ContainsIgnoreCase(this.RelativePath))
+                {
+                    sharedList.Add(this.RelativePath);
+                }
+            }
+            else
+            {
+                if (sharedList.ContainsIgnoreCase(this.RelativePath))
+                {
+                    sharedList.Remove(this.RelativePath);
+                }
+            }
+            FileAttributes attributes = FileAttributes.Normal;
+            if (File.Exists(fileName))
+            {
+                attributes = File.GetAttributes(fileName) & ~FileAttributes.Hidden;
+                File.SetAttributes(fileName, attributes);
+            }
+            File.WriteAllText(fileName, String.Join(",", sharedList));
+            attributes = File.GetAttributes(fileName) | FileAttributes.Hidden;
+            File.SetAttributes(fileName, attributes);
         }
     }
 }

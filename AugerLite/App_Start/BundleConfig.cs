@@ -52,6 +52,13 @@ namespace Auger
                 "~/lib/datetimepicker/css/bootstrap-datetimepicker.css"
             ));
 
+            bundles.Add(new ScriptBundle("~/scripts/switch").Include(
+                "~/lib/bootstrap-switch/js/bootstrap-switch.js"
+            ));
+            bundles.Add(new StyleBundle("~/styles/switch").Include(
+                "~/lib/bootstrap-switch/css/bootstrap3/bootstrap-switch.css"
+            ));
+
             bundles.Add(new ScriptBundle("~/scripts/editor").Include(
                 "~/lib/ace/ace.js"
             ));

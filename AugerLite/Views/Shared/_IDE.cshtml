@@ -1,21 +1,32 @@
 ﻿@{
-  string theme = "dark";
-  string acetheme = "monokai";
-  if (Request.IsAuthenticated)
-  {
-    theme = ApplicationUser.Current.Theme;
-    if (theme != "dark")
+    string theme = "dark";
+    string acetheme = "monokai";
+    if (Request.IsAuthenticated)
     {
-      acetheme = "github";
+      theme = ApplicationUser.Current.Theme;
+      if (theme != "dark")
+      {
+        acetheme = "github";
+      }
     }
-  }
+    var isReadOnly = ViewBag.IsReadOnly == true;
+    var canShare = ViewBag.CanShare == true;
+    var isShared = ViewBag.IsShared == true;
+    var canSubmit = ViewBag.CanSubmit == true;
+    var submitRedirect = ViewBag.SubmitRedirect;
 }
+
+<script>
+  var _isReadOnly = @(isReadOnly ? "true" : "false");
+</script>
 
 <div id="ide-container" class="row full-height">
   <div id="ide" class="ide hidden-xs" style="display:none;">
     <div id="folder-pane" class="ide-left-pane collapse in">
       <div class="panel panel-info">
         <div class="panel-heading">
+          @if (!isReadOnly)
+          {
           <div class="btn-group btn-group-xs pull-right" style="margin-top: 6px">
             <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               <i class="fa fa-plus"></i> Add <span class="caret"></span>
@@ -33,6 +44,7 @@
               <li><a id="menu-import"><i class="fa fa-download"></i> Import Project...</a>
             </ul>
           </div>
+          }
           <h5>
             Files and Folders
           </h5>
@@ -48,11 +60,18 @@
       </div>
       <div class="panel panel-info">
         <div class="panel-heading">
-          @if (ViewBag.CanSubmit)
-          {
           <div class="btn-group btn-group-xs pull-right" style="margin-top: 6px">
-            <button id="menu-submit" class="btn btn-primary" type="button"><i class="fa fa-cloud-upload"></i> Submit Assignment</button>
+            <button id="menu-download" class="btn btn-primary" type="button"><i class="fa fa-download"></i> Download as Zip</button>
+            @if (!isReadOnly && canSubmit)
+            {
+              <button id="menu-submit" class="btn btn-primary" type="button"><i class="fa fa-cloud-upload"></i> Submit Assignment</button>
+            }
           </div>
+          @if (!isReadOnly && canShare)
+          {
+            <div class="btn-group btn-group-xs pull-right" style="margin-top: 6px; margin-right: 10px; position: relative;">
+              <input id="check-shared" class="switch" type="checkbox" @(isShared ? "checked" : "")><label for="check-shared"><i class="fa fa-share-alt" style="display:inline"></i>&nbsp;Share</label>
+            </div>
           }
           <div class="btn-group btn-group-xs pull-right" style="margin-top: 6px; margin-right: 10px;">
             <button id="menu-preview" type="button" class="btn btn-primary" data-toggle="button" aria-pressed="false" autocomplete="off"><i class="fa fa-eye"></i> Preview</button>
@@ -76,6 +95,8 @@
               </div>
             </div>
             <div id="text-editor-container" style="display:none;">
+              @if (!isReadOnly)
+              {
               <div class="btn-toolbar" style="padding:5px;">
                 <div class="btn-group btn-group-xs">
                   <button id="menu-save" type="button" class="btn btn-primary"><i class="fa fa-save"></i> Save</button>
@@ -110,6 +131,7 @@
                 </div>
               </div>
               <div class="bg-info" style="height:2px"></div>
+              }
               <div class="full-height">
                 <div id="text-editor"></div>
               </div>
@@ -518,6 +540,7 @@
   /////////////////////////////////////////////////////////////////
   // EDITOR FILE CLASS
   /////////////////////////////////////////////////////////////////
+  var _$editorFileList = null;
   var _editorFiles = {};
   var _activeEditorFile = null;
 
@@ -551,7 +574,7 @@
     this.AceSession = null;
     this.LastSaveText = null;
     var segments = this.Name.split('.');
-    this.Extension = segments[segments.length - 1];
+    this.Extension = segments[segments.length - 1].toLowerCase();
     this.IsText = textExts.indexOf(this.Extension) > -1;
     this.IsImage = imageExts.indexOf(this.Extension) > -1;
     this.CanBrowse = browserExts.indexOf(this.Extension) > -1;
@@ -589,6 +612,7 @@
   _textEditor.setHighlightActiveLine(true);
   _textEditor.setBehavioursEnabled(true);
   _textEditor.setShowFoldWidgets(true);
+  _textEditor.setReadOnly(_isReadOnly);
   _textEditor.setOptions({
     enableBasicAutocompletion: true,
     enableSnippets: false,
@@ -613,6 +637,22 @@
         });
       },
       readOnly: false // false if this command should not apply in readOnly mode
+    },
+    {
+      name: 'prevTab',
+      bindKey: { win: 'Ctrl-Shift-Up', mac: 'Command-Shift-Up' },
+      exec: function (editor) {
+        _prevTab();
+      },
+      readOnly: true // false if this command should not apply in readOnly mode
+    },
+    {
+      name: 'nextTab',
+      bindKey: { win: 'Ctrl-Shift-Down', mac: 'Command-Shift-Down' },
+      exec: function (editor) {
+        _nextTab();
+      },
+      readOnly: true // false if this command should not apply in readOnly mode
     }
   ]);
 
@@ -689,6 +729,7 @@
   };
 
   var _loadEditorFiles = function ($fileList) {
+    _$editorFileList = $fileList;
     for (var fileId in _editorFiles) {
       _editorFiles[fileId].ShouldRemove = true; // change to false if seen below
     }
@@ -722,15 +763,46 @@
     }
   };
 
+  window.onkeypress = function (e) {
+    if (e.key === 'ArrowDown') {
+      if (e.shiftKey && e.ctrlKey) {
+        _nextTab();
+      }
+      e.preventDefault();
+    }
+    if (e.key === 'ArrowUp') {
+      if (e.shiftKey && e.ctrlKey) {
+        _prevTab();
+      }
+      e.preventDefault();
+    }
+  };
+
+  var _nextTab = function () {
+    var $all = _$editorFileList.find('a.file');
+    var $active = _$editorFileList.find('a.file.selected');
+    var $next = nextElement($all, $active);
+    $next.click();
+  }
+
+  var _prevTab = function () {
+    var $all = _$editorFileList.find('a.file');
+    var $active = _$editorFileList.find('a.file.selected');
+    var $prev = prevElement($all, $active);
+    $prev.click();
+  }
+
   var _onChangeAnnotations = function (editorFile) {
     var annot = editorFile.AceSession.getAnnotations();
+    var cnt = 0;
     for (var i = 0; i < annot.length; i++) {
       // column, raw, row, text, type ('info','error')
       var a = annot[i];
-      //console.log(annot[i].type + " -- [" + a.row + "," + a.column + "] " + a.text);
+      //console.log(a.type + " -- [" + a.row + "," + a.column + "] " + a.text);
+      if (a.type === 'error') cnt++;
     }
     var $file = $('a[data-path="' + editorFile.FullPath + '"]');
-    if (annot.length > 0) {
+    if (cnt > 0) {
       editorFile.HasWarnings = true;
       $file.addClass('warn');
     } else {
@@ -763,6 +835,7 @@
   /////////////////////////////////////////////////////////////////
 
   var _imageEditor = null;
+  var _activeImage = null;
 
   var _showImageEditor = function (editorFile) {
     $('#message-container').hide();
@@ -770,40 +843,48 @@
     $('#image-editor-container').show();
     $('#file-name').text(editorFile.FullPath);
 
-    var src = _browseRoot + editorFile.FullPath;
+    if (_activeImage === editorFile) {
+      return;
+    }
+    _activeImage = editorFile;
 
-    if (!_imageEditor) {
-      showLoadingDiv($('#image-editor'));
-      _imageEditor = new Aviary.Feather({
-        apiKey: 'c1c166186a5e49b9b64faf92291f0d18',
-        theme: '@theme',
-        appendTo: 'image-editor',
-        enableCORS: true,
-        tools: 'resize,crop,orientation,draw,text,enhance,effects,lighting,frames',
-        displayImageSize: true,
-        noCloseButton: true,
-        launchDelay: 0,
-        closeDelay: 0,
-        onSaveButtonClicked: function (imageID) { },
-        onSave: function (imageID, newUrl) {
-          var img = document.getElementById(imageID);
-          img.src = newUrl;
-          _fileManager.saveUrl(new simpleFile(_fileManager.ActiveFilePath), newUrl)
-            .catch(function (ex) { alert(ex.message); });
-          return false; // suppress dialog
-        },
-        onLoad: function () {
-          hideLoadingDiv($('#image-editor'));
-          $('#image-editor-img').attr('src', src);
-          _imageEditor.launch({
-            image: 'image-editor-img'
-          });
-        }
-      });
+    var src = _browseRoot + editorFile.FullPath;
+    var srcBusted = src + '?' + Math.floor(Math.random() * 10000000000)
+
+    if (_isReadOnly) {
+      $('#image-editor').html('<img src="' + src + '" style="max-width:100%;max-height:100%;display:block;margin:auto;">');
     } else {
-      if ($('#image-editor-img').attr('src') !== src) {
+      if (!_imageEditor) {
+        showLoadingDiv($('#image-editor'));
+        _imageEditor = new Aviary.Feather({
+          apiKey: 'c1c166186a5e49b9b64faf92291f0d18',
+          theme: '@theme',
+          appendTo: 'image-editor',
+          enableCORS: true,
+          tools: 'resize,crop,orientation,draw,text,enhance,effects,lighting,frames',
+          displayImageSize: true,
+          noCloseButton: true,
+          launchDelay: 0,
+          closeDelay: 0,
+          onSaveButtonClicked: function (imageID) { },
+          onSave: function (imageID, newUrl) {
+            var img = document.getElementById(imageID);
+            img.src = newUrl;
+            _fileManager.saveUrl(new simpleFile(_fileManager.ActiveFilePath), newUrl)
+              .catch(function (ex) { alert(ex.message); });
+            return false; // suppress dialog
+          },
+          onLoad: function () {
+            hideLoadingDiv($('#image-editor'));
+            $('#image-editor-img').attr('src', src);
+            _imageEditor.launch({
+              image: 'image-editor-img'
+            });
+          }
+        });
+      } else {
         _imageEditor.close();
-        $('#image-editor-img').attr('src', src);
+        $('#image-editor-img').attr('src', srcBusted);
         _imageEditor.launch({
           image: 'image-editor-img'
         });
@@ -896,8 +977,6 @@
       $('#preview-container').css('width', pwidth);
       $('#preview-container').css('margin-left', ewidth);
       $('#editor-container').css('width', ewidth);
-
-      //$('#browser').getNiceScroll().resize();
     } else {
       $('#preview-container').css('display', 'none');
       $('#editor-container').css('width', '100%');
@@ -917,7 +996,6 @@
   }
 
   $(function () {
-    //$('#browser').niceScroll();
     $('#browser').load(function () {
       var href = $('#browser')[0].contentWindow.location.href;
       if (!!href) {
@@ -988,8 +1066,31 @@
       if (editorFile.CanBrowse) {
         _setPreviewPath(editorFile.FullPath);
       }
+
+      // insure visible
+      $(this).parents('.collapse').prev('.collapsed').removeClass('collapsed');
+      $(this).parents('.collapse').addClass('in');
+      $list = $(this).closest('.ide-file-list');
+      var height = $(this).outerHeight();
+      var listHeight = $list.innerHeight();
+      var top = this.offsetTop;
+      var parent = this.offsetParent;
+      while (parent != null && parent != $list[0]) {
+        top += parent.offsetTop;
+        parent = parent.offsetParent;
+      }
+      var bottom = top + height;
+      var scrollTop = $list.scrollTop();
+      if (top < scrollTop || bottom > scrollTop + listHeight) {
+        if (bottom > listHeight / 2) {
+          scrollTop = bottom - listHeight + 10;
+        } else {
+          scrollTop = top - 10;
+        }
+      }
+      $list.scrollTop(scrollTop);
     });
-    
+
     /////////////////////////////////////////////////////////////////
     // FILE / FOLDER MANAGEMENT FUNCTIONS
     /////////////////////////////////////////////////////////////////
@@ -1297,15 +1398,34 @@
       })
     }
 
+    function _downloadProject() {
+      _fileManager.downloadProject().then(function () {
+      }).catch(function (err) {
+        alert(err.message);
+      })
+    }
+
     $('#import-project-modal').on('shown.bs.modal', function () {
       $('#import-project-list').focus();
     });
 
     $('#import-project-confirm-button').click(function () {
+      // clean up current session
+      for (var fileId in _editorFiles) {
+        var session = _editorFiles[fileId].AceSession;
+        if (!!session) {
+          session.destroy();
+        }
+        delete _editorFiles[fileId];
+      }
+      _activeEditorFile = null;
+
+      // import the selected project
       var $selectedOption = $('#import-project-list option:selected');
       var type = $selectedOption.data('type');
-      var repositoryId = $selectedOption.attr('value');
-      _fileManager.importProject(type, repositoryId).then(function () {
+      var courseId = $selectedOption.data('course-id');
+      var repositoryId = $selectedOption.data('repo-id');
+      _fileManager.importProject(type, courseId, repositoryId).then(function () {
         $('#import-project-modal').modal('hide');
       }).catch(function (err) {
         alert(err.message);
@@ -1315,106 +1435,107 @@
     /////////////////////////////////////////////////////////////////
     // DRAG AND DROP
     /////////////////////////////////////////////////////////////////
+    if (!_isReadOnly) {
+      $(document).on('dragenter', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        $('.ide-file-list').addClass('droptarget');
+      });
+      $(document).on('dragover', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        var dt = e.originalEvent.dataTransfer;
+        dt.dropEffect = 'none';
+      });
+      $(document).on('dragexit', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        $('.droptarget').removeClass('droptarget');
+        $('.dropover').removeClass('dropover');
+      });
+      $(document).on('dragend', function (e) {
+        $('.droptarget').removeClass('droptarget');
+        $('.dropover').removeClass('dropover');
+      });
+      $(document).on('drop', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      });
+      $(document).on('dragstart', '.ide-file-list a', function (e) {
+        var dt = e.originalEvent.dataTransfer;
+        dt.setData('path', $(this).data('path'));
+      });
+      $(document).on('dragenter', '.ide-file-list', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        $('.dropover').removeClass('dropover');
+        $(this).addClass('dropover');
+      });
+      $(document).on('dragenter', '.ide-file-list a', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        $('.dropover').removeClass('dropover');
+        $(this).closest('.folder-wrapper').addClass('dropover');
+      });
+      $(document).on('dragover', '.ide-file-list, .ide-file-list .folder-wrapper', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        var dt = e.originalEvent.dataTransfer;
+        var isInternal = dt.getData('path').length > 0;
+        dt.dropEffect = isInternal && !e.ctrlKey ? 'move' : 'copy';
+      });
+      $(document).on('dragexit', '.ide-file-list, .ide-file-list .folder-wrapper', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        $(this).removeClass('dropover');
+      });
+      $(document).on('drop', '.ide-file-list, .ide-file-list a.file, .ide-file-list a.folder', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
 
-    $(document).on('dragenter', function (e) {
-      e.stopPropagation();
-      e.preventDefault();
-      $('.ide-file-list').addClass('droptarget');
-    });
-    $(document).on('dragover', function (e) {
-      e.stopPropagation();
-      e.preventDefault();
-      var dt = e.originalEvent.dataTransfer;
-      dt.dropEffect = 'none';
-    });
-    $(document).on('dragexit', function (e) {
-      e.stopPropagation();
-      e.preventDefault();
-      $('.droptarget').removeClass('droptarget');
-      $('.dropover').removeClass('dropover');
-    });
-    $(document).on('dragend', function (e) {
-      $('.droptarget').removeClass('droptarget');
-      $('.dropover').removeClass('dropover');
-    });
-    $(document).on('drop', function (e) {
-      e.stopPropagation();
-      e.preventDefault();
-    });
-    $(document).on('dragstart', '.ide-file-list a', function (e) {
-      var dt = e.originalEvent.dataTransfer;
-      dt.setData('path', $(this).data('path'));
-    });
-    $(document).on('dragenter', '.ide-file-list', function (e) {
-      e.stopPropagation();
-      e.preventDefault();
-      $('.dropover').removeClass('dropover');
-      $(this).addClass('dropover');
-    });
-    $(document).on('dragenter', '.ide-file-list a', function (e) {
-      e.stopPropagation();
-      e.preventDefault();
-      $('.dropover').removeClass('dropover');
-      $(this).closest('.folder-wrapper').addClass('dropover');
-    });
-    $(document).on('dragover', '.ide-file-list, .ide-file-list .folder-wrapper', function (e) {
-      e.stopPropagation();
-      e.preventDefault();
-      var dt = e.originalEvent.dataTransfer;
-      var isInternal = dt.getData('path').length > 0;
-      dt.dropEffect = isInternal && !e.ctrlKey ? 'move' : 'copy';
-    });
-    $(document).on('dragexit', '.ide-file-list, .ide-file-list .folder-wrapper', function (e) {
-      e.stopPropagation();
-      e.preventDefault();
-      $(this).removeClass('dropover');
-    });
-    $(document).on('drop', '.ide-file-list, .ide-file-list a.file, .ide-file-list a.folder', function (e) {
-      e.stopPropagation();
-      e.preventDefault();
+        $('.droptarget').removeClass('droptarget');
+        $('.dropover').removeClass('dropover');
 
-      $('.droptarget').removeClass('droptarget');
-      $('.dropover').removeClass('dropover');
+        var targetFolder = $(this).data('folder');
 
-      var targetFolder = $(this).data('folder');
+        var dt = e.originalEvent.dataTransfer;
+        var fileCount = dt.files.length;
 
-      var dt = e.originalEvent.dataTransfer;
-      var fileCount = dt.files.length;
+        var isInternal = fileCount == 0;
+        var isMove = isInternal && !e.ctrlKey;
 
-      var isInternal = fileCount == 0;
-      var isMove = isInternal && !e.ctrlKey;
-
-      if (!isInternal) {
-        _fileManager.upload(dt.files, targetFolder)
-          .catch(function (ex) { alert(ex.message); });
-      } else {
-        var path = dt.getData('path');
-        if (path.length > 0) {
-          var source = new simpleFile(path);
-          if (source.IsFolder) {
-            if (source.Path !== targetFolder && !targetFolder.startsWith(source.FullPath + '/')) {
-              if (isMove) {
-                _fileManager.moveFolder(source, targetFolder)
-                  .catch(function (ex) { alert(ex.message); });
-              } else {
-                _fileManager.copyFolder(source, source.Name, targetFolder)
-                  .catch(function (ex) { alert(ex.message); });
+        if (!isInternal) {
+          _fileManager.upload(dt.files, targetFolder)
+            .catch(function (ex) { alert(ex.message); });
+        } else {
+          var path = dt.getData('path');
+          if (path.length > 0) {
+            var source = new simpleFile(path);
+            if (source.IsFolder) {
+              if (source.Path !== targetFolder && !targetFolder.startsWith(source.FullPath + '/')) {
+                if (isMove) {
+                  _fileManager.moveFolder(source, targetFolder)
+                    .catch(function (ex) { alert(ex.message); });
+                } else {
+                  _fileManager.copyFolder(source, source.Name, targetFolder)
+                    .catch(function (ex) { alert(ex.message); });
+                }
               }
-            }
-          } else {
-            if (source.Path !== targetFolder) {
-              if (isMove) {
-                _fileManager.moveFile(source, targetFolder)
-                  .catch(function (ex) { alert(ex.message); });
-              } else {
-                _fileManager.copyFile(source, source.Name, targetFolder)
-                  .catch(function (ex) { alert(ex.message); });
+            } else {
+              if (source.Path !== targetFolder) {
+                if (isMove) {
+                  _fileManager.moveFile(source, targetFolder)
+                    .catch(function (ex) { alert(ex.message); });
+                } else {
+                  _fileManager.copyFile(source, source.Name, targetFolder)
+                    .catch(function (ex) { alert(ex.message); });
+                }
               }
             }
           }
         }
-      }
-    });
+      });
+    }
 
     /////////////////////////////////////////////////////////////////
     // FILE MENU
@@ -1446,6 +1567,10 @@
 
     $('#menu-import').click(function () {
       _importProject();
+    });
+
+    $('#menu-download').click(function () {
+      _downloadProject();
     });
 
     /////////////////////////////////////////////////////////////////
@@ -1524,7 +1649,7 @@
     });
 
     /////////////////////////////////////////////////////////////////
-    // PREVIEW / SUBMIT MENU
+    // PREVIEW / SHARE / SUBMIT MENUS
     /////////////////////////////////////////////////////////////////
 
     $('#menu-preview').click(function () {
@@ -1537,7 +1662,33 @@
 
     $('#menu-submit').click(function () {
       _ideBusy();
-      $('#menu-save-all').click();
+      var dirtyFiles = [];
+      for (var id in _editorFiles) {
+        var editorFile = _editorFiles[id];
+        if (editorFile.isDirty()) {
+          dirtyFiles.push(editorFile);
+        }
+      }
+      var len = dirtyFiles.length;
+      if (len == 0) {
+        _submit();
+      } else {
+        while (dirtyFiles.length > 0) {
+          var editorFile = dirtyFiles.pop();
+          console.log('save: ' + editorFile.FullPath);
+          _saveTextFile(editorFile).then(function () {
+            console.log('done...' + len);
+            if (--len == 0) {
+              _submit();
+            }
+          }).catch(function (err) {
+            alert(err.message);
+          });
+        }
+      }
+    });
+
+    var _submit = function () {
       $.post({
         url: _basePath + '/Submit',
         data: _baseDataObject,
@@ -1545,7 +1696,7 @@
         dataType: 'json'
       }).done(function (submission) {
         if (submission.Succeeded) {
-          window.location = '@ViewBag.SubmitRedirect';
+          window.location = '@submitRedirect';
         } else {
           _ideReady();
           alert(submission.Exception);
@@ -1554,7 +1705,26 @@
         _ideReady();
         alert(errorThrown);
       });
-    });
+    }
+
+    var _changeShared = function () {
+      var check = this;
+      check.disabled = true;
+      $.post({
+        url: _basePath + '/SetIsShared',
+        data: $.extend({}, _baseDataObject, {
+          isShared: $(this).is(':checked')
+        }),
+        type: 'POST',
+        dataType: 'json'
+      }).done(function (data) {
+        check.disabled = false;
+      }).fail(function (jqXHR, textStatus, errorThrown) {
+        alert(errorThrown);
+        check.disabled = false;
+      });
+    }
+    $('#check-shared').on('change', _changeShared);
 
     $('#preview-refresh').click(function () {
       _refreshPreview();
@@ -1571,39 +1741,41 @@
     // CONTEXT MENU
     /////////////////////////////////////////////////////////////////
 
-    context.init();
-    context.attach('.ide-file-list a', [
-      { header: 'File Operations'},
-      {
-        text: 'Copy to...',
-        action: function (e) {
-          var type = context.activeTarget().hasClass('folder') ? 'folder' : 'file';
-          _copy(type, context.activeTarget().data('path'))
+    if (!_isReadOnly) {
+      context.init();
+      context.attach('.ide-file-list a', [
+        { header: 'File Operations' },
+        {
+          text: 'Copy to...',
+          action: function (e) {
+            var type = context.activeTarget().hasClass('folder') ? 'folder' : 'file';
+            _copy(type, context.activeTarget().data('path'))
+          }
+        },
+        {
+          text: 'Move to...',
+          action: function (e) {
+            var type = context.activeTarget().hasClass('folder') ? 'folder' : 'file';
+            _move(type, context.activeTarget().data('path'));
+          }
+        },
+        {
+          text: 'Rename...',
+          action: function (e) {
+            var type = context.activeTarget().hasClass('folder') ? 'folder' : 'file';
+            _rename(type, context.activeTarget().data('path'));
+          }
+        },
+        { divider: true },
+        {
+          text: '<i class="fa fa-close"></i> Delete',
+          action: function (e) {
+            var type = context.activeTarget().hasClass('folder') ? 'folder' : 'file';
+            _delete(type, context.activeTarget().data('path'));
+          }
         }
-      },
-      {
-        text: 'Move to...',
-        action: function (e) {
-          var type = context.activeTarget().hasClass('folder') ? 'folder' : 'file';
-          _move(type, context.activeTarget().data('path'));
-        }
-      },
-      {
-        text: 'Rename...',
-        action: function (e) {
-          var type = context.activeTarget().hasClass('folder') ? 'folder' : 'file';
-          _rename(type, context.activeTarget().data('path'));
-        }
-      },
-      { divider : true },
-      {
-        text: '<i class="fa fa-close"></i> Delete',
-        action: function (e) {
-          var type = context.activeTarget().hasClass('folder') ? 'folder' : 'file';
-          _delete(type, context.activeTarget().data('path'));
-        }
-      }
-    ]);
+      ]);
+    }
 
     /////////////////////////////////////////////////////////////////
     // FINAL SETUP
@@ -1622,22 +1794,26 @@
 
     _fileManager.onFolderChanged(function () {
       _loadEditorFiles($('#file-list'));
+      var $selected = $();
       if ($('#file-list a.file').length == 0) {
         _showMessage(null, '<i class="fa fa-hand-o-left"></i>', "It's lonely in here!<br>Use the 'Add' menu to create<br>some files and let's get started.");
       } else {
-        var $selected = $('#file-list a.selected');
+        $selected = $('#file-list a.selected');
         if ($selected.length == 0) {
           $selected = $('#file-list a.file[data-folder="/"]').first();
         }
-        $selected.click();
-        $selected.parents('.collapse').prev('.collapsed').removeClass('collapsed');
-        $selected.parents('.collapse').addClass('in');
+        if ($selected.length == 0) {
+          $selected = $('#file-list a.file').first();
+        }
       }
       _filesReady();
       _ideReady();
+      $selected.click();
     })
 
-    _fileManager.loadFolder();
+    _fileManager.loadFolder().catch(function (err) {
+      alert(err.message);
+    });
   });
 
   $(window).on('resize', function () {

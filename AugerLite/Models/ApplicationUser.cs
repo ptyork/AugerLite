@@ -64,7 +64,7 @@ namespace Auger.Models
         {
             try
             {
-                var user = UserManager.FindByEmail(userName);
+                var user = UserManager.FindByName(userName);
                 return user;
             }
             catch (Exception ex)
@@ -215,6 +215,20 @@ namespace Auger.Models
             var claims = Identity.Claims;
             var isInRole = claims.Any(c => c.Type == SystemRoleClaim && roles.Contains(c.Value));
             return isInRole;
+        }
+
+        public bool IsInstructorForCourse(Course course)
+        {
+            if (course.Enrollments == null || course.Enrollments.Count == 0)
+            {
+                return false;
+            }
+            var enrollment = course.Enrollments.FirstOrDefault(e => e.UserId == this.Id);
+            if (enrollment == null)
+            {
+                return false;
+            }
+            return enrollment.IsActive && enrollment.Roles.Contains(UserRoles.InstructorRole, StringComparer.InvariantCultureIgnoreCase);
         }
     }
 }

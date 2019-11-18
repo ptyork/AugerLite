@@ -5,9 +5,6 @@
 }
 
 @section Head {
-  <script src="~/Scripts/ace/ace.js"></script>
-  <script src="~/Scripts/ace/ext-language_tools.js"></script>
-  <script src="~/Scripts/ace/ext-settings_menu.js"></script>
   <script>
     var allFiles = [];
     var activeFile = null;
@@ -190,6 +187,8 @@
   });
 </script>
 *@
+@Scripts.Render("~/scripts/editor")
+@Scripts.Render("~/scripts/ide")
 <script>
 
   var baseSourceHref = '@Url.Action("ScriptSource", new { courseId = Model.CourseId })/';

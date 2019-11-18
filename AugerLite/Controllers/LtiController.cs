@@ -91,7 +91,7 @@ namespace Auger.Controllers
             }
 
             var signature = ltiRequest.GenerateSignature(consumer.Secret);
-            if (!signature.Equals(ltiRequest.Signature))
+            if (!signature.EqualsIgnoreCase(ltiRequest.Signature))
             {
                 throw new LtiException("Invalid " + OAuthConstants.SignatureParameter);
             }
@@ -126,8 +126,8 @@ namespace Auger.Controllers
             // time to grade the assignment. So they are stored in a separate table.
             var lisOutcomeServiceUrl = ((IOutcomesManagementRequest)ltiRequest).LisOutcomeServiceUrl;
             var lisResultSourcedid = ((IOutcomesManagementRequest)ltiRequest).LisResultSourcedId;
-            if (!string.IsNullOrWhiteSpace(lisOutcomeServiceUrl)
-                && !string.IsNullOrWhiteSpace(lisResultSourcedid))
+            if (!string.IsNullOrWhiteSpace(lisOutcomeServiceUrl) &&
+                !string.IsNullOrWhiteSpace(lisResultSourcedid))
             {
                 var outcome = await db.LtiOutcomes.SingleOrDefaultAsync(o =>
                     o.LtiConsumerId == consumer.LtiConsumerId
@@ -218,14 +218,14 @@ namespace Auger.Controllers
                     //       or not.
                     await UserManager.AddLoginAsync(user.Id, login);
                 }
-                else if (user.UserName == loginUser.UserName)
+                else if (user.UserName.EqualsIgnoreCase(loginUser.UserName))
                 {
                     // Already logged in as this user...'tscool...just relogin with claims
                 }
                 else
                 {
                     // TODO: Consider a "merge user" action here
-                    throw new LtiException("Your account is already associated with another user on Auger.");
+                    throw new LtiException($"Your account ({loginUser.UserName}) is already associated with another user ({user.UserName}) on Auger.");
                 }
             }
 
@@ -317,7 +317,7 @@ namespace Auger.Controllers
             {
                 // NEW COURSE BUT NOT AN INSTRUCTOR
                 // TODO: Make Good Error Page
-                Elmah.ErrorSignal.FromCurrentContext().Raise(new Exception($"Student accessing {ltiContext.CourseTitle} - {ltiContext.CourseTitle} bit it isn't available yet in Auger"));
+                Elmah.ErrorSignal.FromCurrentContext().Raise(new Exception($"Student accessing {ltiContext.CourseTitle} - {ltiContext.CourseTitle} but it isn't available yet in Auger"));
                 return RedirectToAction("Index", "Home");
             }
 
@@ -344,28 +344,10 @@ namespace Auger.Controllers
             }
             else
             {
-                var newRoles = new List<string>();
-                foreach (var role in ltiContext.Roles)
-                {
-                    if (!enrollment.IsInRole(role))
-                    {
-                        newRoles.Add(role);
-                    }
-                }
-                if (newRoles.Count > 0)
-                {
-                    newRoles.AddRange(enrollment.Roles);
-                    enrollment.AllRoles = string.Join(",", newRoles);
-                    db.SaveChanges();
-                }
-            }
-
-            if (enrollment == null)
-            {
-                // SHOULD NEVER HAPPEN
-                // TODO: Make Good Error Page
-                Elmah.ErrorSignal.FromCurrentContext().Raise(new Exception("Unable to find OR create an enrollment...bad news"));
-                return RedirectToAction("Index", "Home");
+                var isSuperUser = enrollment.IsInRole(UserRoles.SuperUserRole);
+                enrollment.AllRoles = string.Join(",", ltiContext.Roles);
+                if (isSuperUser) enrollment.Roles.Add(UserRoles.SuperUserRole);
+                db.SaveChanges();
             }
 
             //
@@ -388,8 +370,12 @@ namespace Auger.Controllers
 
             //
             // REDIRECT HERE IF NO ASSIGNMENT SPECIFIED
+            // HACK: At least for Canvas, the LitResourceLinkId is always
+            //       provided. However, if it isn't an assignment, there's
+            //       no LisOutcomeServiceUrl, so we'll use that instead.
             //
-            if (string.IsNullOrWhiteSpace(ltiContext.LtiResourceLinkId))
+            //if (string.IsNullOrWhiteSpace(ltiContext.LtiResourceLinkId))
+            if (string.IsNullOrWhiteSpace(lisOutcomeServiceUrl))
             {
                 if (ltiContext.IsInstructor)
                 {
@@ -425,7 +411,7 @@ namespace Auger.Controllers
                 // NEW ASSIGNMENT BUT NOT AN INSTRUCTOR
                 // TODO: Make Good Error Page
                 Elmah.ErrorSignal.FromCurrentContext().Raise(new Exception($"{user.UserName} attempted to access '{ltiContext.CourseTitle}/{ltiContext.AssignmentName}' before it was created."));
-                return RedirectToAction("Index", "Home");
+                return RedirectToAction("Index", "Assignment");
             }
 
             ltiContext.IsAssignmentLinked = true;

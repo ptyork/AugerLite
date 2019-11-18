@@ -13,6 +13,7 @@ namespace Auger.Models
         public bool DomTestComplete { get; set; } = false;
 
         public List<W3CHtmlValidationMessage> W3CHtmlValidationMessages { get; set; } = new List<W3CHtmlValidationMessage>();
+        public List<W3CHtmlValidationMessage> W3CCssValidationMessagesNew { get; set; } = new List<W3CHtmlValidationMessage>();
 
         public List<W3CCssValidationMessage> W3CCssValidationMessages { get; set; } = new List<W3CCssValidationMessage>();
 
@@ -31,6 +32,8 @@ namespace Auger.Models
 
             this.W3CHtmlValidationMessages.AddRange(r.W3CHtmlValidationMessages);
             this.HtmlValidationCompleted = this.HtmlValidationCompleted || r.HtmlValidationCompleted;
+
+            this.W3CCssValidationMessagesNew.AddRange(r.W3CCssValidationMessagesNew);
 
             this.W3CCssValidationMessages.AddRange(r.W3CCssValidationMessages);
             this.CssValidationCompleted = this.CssValidationCompleted || r.CssValidationCompleted;

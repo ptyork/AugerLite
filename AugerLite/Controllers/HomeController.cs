@@ -22,8 +22,6 @@ namespace Auger.Controllers
 {
     public class HomeController : Controller
     {
-        private AugerContext db = new AugerContext();
-
         public ActionResult Index()
         {
             return View();
@@ -32,15 +30,6 @@ namespace Auger.Controllers
         public ActionResult Unauthorized()
         {
             return View();
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                db.Dispose();
-            }
-            base.Dispose(disposing);
         }
     }
 }

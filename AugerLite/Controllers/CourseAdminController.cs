@@ -926,7 +926,11 @@ namespace Auger.Controllers
                     return null;
                 }
 
-                SubmissionTester.TestSubmission(submission);
+                using (var t = new SubmissionTester(submission))
+                {
+                    t.TestAll();
+                }
+
                 _db.SaveChanges();
 
                 return new JsonNetResult(submission.FullResults);

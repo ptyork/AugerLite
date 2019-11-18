@@ -525,7 +525,7 @@ var fileManager = function (config) {
       }).fail(function (xhr, textStatus, errorThrown) {
         reject(Error('UNABLE TO SAVE SELECTED FILE\n' + errorThrown));
       });
-    })
+    });
   };
   this.writeText = _writeText;
 
@@ -544,7 +544,7 @@ var fileManager = function (config) {
       }).fail(function (xhr, textStatus, errorThrown) {
         reject(Error('UNABLE TO SAVE SELECTED FILE\n' + errorThrown));
       });
-    })
+    });
   };
   this.saveUrl = _saveUrl;
 
@@ -561,21 +561,21 @@ var fileManager = function (config) {
           $select.append($('<option disabled>PLAYGROUNDS</option>'));
           for (var i = 0; i < data.Playgrounds.length; i++) {
             var proj = data.Playgrounds[i];
-            $select.append($('<option>', { text: proj.Name, value: proj.RepositoryId }).data('type', proj.Type));
+            $select.append($('<option>').data('course-id', proj.CourseId).data('repo-id', proj.RepositoryId).data('type', proj.Type).text(proj.Name));
           }
         }
         if (data.AssignmentSubmissions.length > 0) {
           $select.append($('<option disabled>ASSIGNMENT SUBMISSIONS</option>'));
           for (var i = 0; i < data.AssignmentSubmissions.length; i++) {
             var proj = data.AssignmentSubmissions[i];
-            $select.append($('<option>', { text: proj.Name, value: proj.RepositoryId }).data('type', proj.Type));
+            $select.append($('<option>').text(proj.Name).data('course-id', proj.CourseId).data('repo-id', proj.RepositoryId).data('type', proj.Type));
           }
         }
         if (data.AssignmentWorkspaces.length > 0) {
           $select.append($('<option disabled>ASSIGNMENT WORKSPACES</option>'));
           for (var i = 0; i < data.AssignmentWorkspaces.length; i++) {
             var proj = data.AssignmentWorkspaces[i];
-            $select.append($('<option>', { text: proj.Name, value: proj.RepositoryId }).data('type', proj.Type));
+            $select.append($('<option>').text(proj.Name).data('course-id', proj.CourseId).data('repo-id', proj.RepositoryId).data('type', proj.Type));
           }
         }
         if ($select.find('option').length > 0) {
@@ -590,13 +590,14 @@ var fileManager = function (config) {
   };
   this.loadImportableProjects = _loadImportableProjects;
 
-  var _importProject = function (type, repositoryId) {
+  var _importProject = function (type, courseId, repositoryId) {
     return new Promise(function (resolve, reject) {
       _folderChanging();
       $.post({
         url: _basePath + '/ImportProject',
         data: $.extend({}, _baseDataObject, {
           sourceType: type,
+          sourceCourseId: courseId,
           sourceRepositoryId: repositoryId
         }),
         type: 'POST',
@@ -610,5 +611,38 @@ var fileManager = function (config) {
     });
   };
   this.importProject = _importProject;
+
+  var _downloadProject = function () {
+    return new Promise(function (resolve, reject) {
+      var url = _basePath + '/DownloadProject';
+      var data = _baseDataObject;
+      var $iframe, iframe_doc, iframe_html;
+
+      if (($iframe = $('#download_iframe')).length === 0) {
+        $iframe = $("<iframe id='download_iframe'" +
+          " style='display: none' src='about:blank'></iframe>"
+        ).appendTo("body");
+      }
+
+      iframe_doc = $iframe[0].contentWindow || $iframe[0].contentDocument;
+      if (iframe_doc.document) {
+        iframe_doc = iframe_doc.document;
+      }
+
+      iframe_html = "<html><body><form method='POST' action='" + url + "'>"
+
+      Object.keys(data).forEach(function (key) {
+        iframe_html += "<input type='hidden' name='" + key + "' value='" + data[key] + "'>";
+      });
+
+      iframe_html += "</form></body></html>";
+
+      iframe_doc.open();
+      iframe_doc.write(iframe_html);
+      $(iframe_doc).find('form').submit();
+      resolve();
+    });
+  };
+  this.downloadProject = _downloadProject;
 
 }; // END fileManager class

@@ -42,14 +42,8 @@ namespace Auger
 
             routes.MapRoute(
                 name: "BrowsePlay",
-                url: "BrowsePlay/{courseId}/{playgroundId}/{*pathInfo}",
+                url: "BrowsePlay/{courseId}/{userName}/{playgroundId}/{*pathInfo}",
                 defaults: new { controller = "Browse", action = "BrowsePlay" }
-            );
-
-            routes.MapRoute(
-                name: "BrowseUserPlay",
-                url: "BrowseUserPlay/{courseId}/{userName}/{playgroundId}/{*pathInfo}",
-                defaults: new { controller = "Browse", action = "BrowseUserPlay" }
             );
 
             routes.MapRoute(
@@ -78,8 +72,13 @@ namespace Auger
 
             routes.MapRoute(
                 name: "Default",
-                url: "{controller}/{action}/{id}",
-                defaults: new { controller = "Home", action = "Index", id = UrlParameter.Optional }
+                url: "{controller}/{action}/{id}/{secondaryId}",
+                defaults: new {
+                    controller = "Home",
+                    action = "Index",
+                    id = UrlParameter.Optional,
+                    secondaryId = UrlParameter.Optional
+                }
             );
 
         }

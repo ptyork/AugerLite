@@ -13,159 +13,44 @@ using System.Threading.Tasks;
 
 namespace Auger
 {
-    public static class W3CValidator
+    public class W3CValidator
     {
+        private Uri _baseUri;
+        private List<string> _checkedFiles = new List<string>();
 
-        public static TestResults ValidateHTML(string pageName, string pageText)
+        public TestResults Results { get; } = new TestResults();
+
+        public W3CValidator(Uri baseUri)
         {
-            TestResults results = new TestResults();
-
-            try
-            {
-                var form = new NameValueCollection();
-                form.Add("out", "json");
-                form.Add("content", pageText);
-
-                string htmlValidationJson = null;
-                var req = RequestHelper.GetMultipartFormDataRequest("http://validator.w3.org/nu/", form);
-
-                //var req = HttpWebRequest.CreateHttp("https://validator.nu/?out=json");
-                //req.Method = "POST";
-                //req.ContentType = "text/html; charset=utf-8";
-                //req.UserAgent = "Auger/1.0";
-                //using (var writer = new StreamWriter(req.GetRequestStream()))
-                //{
-                //    writer.Write(pageText);
-                //    writer.Flush();
-                //}
-
-                using (var rsp = req.GetResponse())
-                {
-                    using (var rdr = new StreamReader(rsp.GetResponseStream()))
-                    {
-                        htmlValidationJson = rdr.ReadToEnd();
-                    }
-                }
-
-                var validationResultObject = JObject.Parse(htmlValidationJson);
-                var jsonMessages = validationResultObject["messages"]?.Children();
-
-                if (jsonMessages != null)
-                {
-                    foreach (var jsonMessage in jsonMessages)
-                    {
-                        var msg = JsonConvert.DeserializeObject<W3CHtmlValidationMessage>(jsonMessage.ToString());
-                        msg.Page = pageName;
-                        results.W3CHtmlValidationMessages.Add(msg);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                results.W3CHtmlValidationMessages.Add(new W3CHtmlValidationMessage() {
-                    Type = W3CHtmlValidationMessage.MessageTypes.Warning,
-                    Message = "Unable to perform HTML Validation"
-                });
-                Elmah.ErrorSignal.FromCurrentContext().Raise(e);
-            }
-
-            results.HtmlValidationCompleted = true;
-            return results;
+            _baseUri = baseUri;
         }
 
-        public static TestResults ValidateCSS(string fileName, string cssText)
+        public void ValidatePage(string pageName, string pageText)
         {
-            TestResults results = new TestResults();
-
-            try
-            {
-                var form = new NameValueCollection();
-                form.Add("profile", "css3");
-                form.Add("usermedium", "all");
-                form.Add("type", "css");
-                form.Add("warning", "0");
-                form.Add("vextwarning", "true");
-                form.Add("output", "json");
-                form.Add("lang", "en");
-                form.Add("text", cssText);
-
-                string cssValidationJson = null;
-                var req = RequestHelper.GetMultipartFormDataRequest("http://jigsaw.w3.org/css-validator/validator", form);
-                using (var rsp = req.GetResponse())
-                {
-                    using (var rdr = new StreamReader(rsp.GetResponseStream()))
-                    {
-                        cssValidationJson = rdr.ReadToEnd();
-                    }
-                }
-
-                var validationResultObject = JObject.Parse(cssValidationJson);
-                var jsonErrors = validationResultObject["cssvalidation"]["errors"]?.Children();
-                var jsonWarnings = validationResultObject["cssvalidation"]["warnings"]?.Children();
-
-                if (jsonErrors != null)
-                {
-                    foreach (var jsonError in jsonErrors)
-                    {
-                        var msg = JsonConvert.DeserializeObject<W3CCssValidationMessage>(jsonError.ToString());
-                        msg.File = fileName;
-                        msg.Level = W3CCssValidationMessage.MessageLevels.Error;
-                        results.W3CCssValidationMessages.Add(msg);
-                    }
-                }
-
-                if (jsonWarnings != null)
-                {
-                    foreach (var jsonWarning in jsonWarnings)
-                    {
-                        var msg = JsonConvert.DeserializeObject<W3CCssValidationMessage>(jsonWarning.ToString());
-                        msg.File = fileName;
-                        msg.Level = W3CCssValidationMessage.MessageLevels.Warning;
-                        results.W3CCssValidationMessages.Add(msg);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                results.W3CCssValidationMessages.Add(new W3CCssValidationMessage()
-                {
-                    File = fileName,
-                    Level = W3CCssValidationMessage.MessageLevels.Warning,
-                    Message = "Unable to perform CSS Validation"
-                });
-                Elmah.ErrorSignal.FromCurrentContext().Raise(e);
-            }
-
-            results.CssValidationCompleted = true;
-            return results;
-        }
-
-        public static TestResults ValidateCSS(Uri baseUri, List<string> checkedCssFiles, string pageText)
-        {
-            TestResults results = new TestResults();
+            Results.AppendResults(ValidateSingleFile(pageName, pageText));
+            Results.HtmlValidationCompleted = true;
 
             var dom = CQ.CreateDocument(pageText);
             var links = dom["link[rel='stylesheet']"];
             foreach (var link in links)
             {
-                var linkUrl = link.Attributes["href"] as string;
-                if (string.IsNullOrWhiteSpace(linkUrl))
+                var linkHref = link.Attributes["href"] as string;
+                if (string.IsNullOrWhiteSpace(linkHref))
                 {
                     continue;
                 }
-                linkUrl = linkUrl.Trim();
+                linkHref = linkHref.Trim();
 
-                if (checkedCssFiles.Contains(linkUrl))
+                if (_checkedFiles.Contains(linkHref))
                 {
                     continue;
                 }
-                checkedCssFiles.Add(linkUrl);
+                _checkedFiles.Add(linkHref);
 
-                var isRelative = !linkUrl.Contains("//");
+                var isRelative = !linkHref.Contains("//");
                 if (isRelative)
                 {
-                    linkUrl = baseUri + linkUrl;
-                    var fileName = linkUrl.Split('/').Last();
+                    var linkUrl = _baseUri + linkHref;
 
                     // Get CSS File
                     string linkText = null;
@@ -179,13 +64,13 @@ namespace Auger
                                 linkText = rdr.ReadToEnd();
                             }
                         }
-                        results.AppendResults(ValidateCSS(fileName, linkText));
+                        Results.AppendResults(ValidateSingleFile(linkHref, linkText, true));
                     }
                     catch (Exception e)
                     {
-                        results.W3CCssValidationMessages.Add(new W3CCssValidationMessage()
+                        Results.W3CCssValidationMessages.Add(new W3CCssValidationMessage()
                         {
-                            File = fileName,
+                            File = linkHref,
                             Level = W3CCssValidationMessage.MessageLevels.Warning,
                             Message = "Unable to perform CSS Validation"
                         });
@@ -193,7 +78,67 @@ namespace Auger
                     }
                 }
             }
-            results.CssValidationCompleted = true;
+            Results.CssValidationCompleted = true;
+        }
+
+
+        public static TestResults ValidateSingleFile(string fileName, string fileText, bool isCSS = false)
+        {
+            TestResults results = new TestResults();
+
+            try
+            {
+                var req = HttpWebRequest.CreateHttp(
+                    "https://checker.html5.org/?out=json&level=error"
+                );
+                req.Method = "POST";
+                var type = isCSS ? "css" : "html";
+                req.ContentType = $"text/{type}; charset=utf-8";
+                req.UserAgent = "Auger/1.0";
+                using (var writer = new StreamWriter(req.GetRequestStream()))
+                {
+                    writer.Write(fileText);
+                    writer.Flush();
+                }
+
+                string validationJson = null;
+                using (var rsp = req.GetResponse())
+                {
+                    using (var rdr = new StreamReader(rsp.GetResponseStream()))
+                    {
+                        validationJson = rdr.ReadToEnd();
+                    }
+                }
+
+                var validationResultObject = JObject.Parse(validationJson);
+                var jsonMessages = validationResultObject["messages"]?.Children();
+
+                if (jsonMessages != null)
+                {
+                    foreach (var jsonMessage in jsonMessages)
+                    {
+                        var msg = JsonConvert.DeserializeObject<W3CHtmlValidationMessage>(jsonMessage.ToString());
+                        msg.Page = fileName;
+                        if (isCSS)
+                        {
+                            results.W3CCssValidationMessagesNew.Add(msg);
+                        }
+                        else
+                        {
+                            results.W3CHtmlValidationMessages.Add(msg);
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                results.W3CHtmlValidationMessages.Add(new W3CHtmlValidationMessage()
+                {
+                    Type = W3CHtmlValidationMessage.MessageTypes.Warning,
+                    Message = "Unable to perform HTML Validation"
+                });
+                Elmah.ErrorSignal.FromCurrentContext().Raise(e);
+            }
             return results;
         }
 

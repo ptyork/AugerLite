@@ -2,6 +2,9 @@
 @model PlaygroundIndexViewModel
 @{
     ViewBag.Title = "Playgrounds";
+    var hasShared = Model.SharedPlaygrounds.Any() && !Model.IsInstructorForCourse;
+    var containerClass = hasShared ? "col-md-6" : "col-xs-12";
+    var playgroundClass = hasShared ? "col-sm-6" : "col-md-3 col-sm-4";
 }
 
 @section Breadcrumbs {
@@ -10,51 +13,88 @@
   <li>Playgrounds
 }
 
-<div class="visible-xs">
-  Sorry. Editing is not supported on this device.
-</div>
-<div class="hidden-xs">
-  <div class="btn-group pull-right">
-    <button id="button-new-playground" type="button" class="btn btn-success"><i class="fa fa-plus"></i> New Playground</button>
+<div class="clearfix"></div>
+
+<div class="row">
+  <div class="@containerClass">
+    <div class="panel panel-primary" style="margin-top: 15px;">
+      <div class="panel-heading">
+        <div class="btn-group btn-group-sm pull-right" style="margin-top: 3px">
+          <button id="button-new-playground" type="button" class="btn btn-success"><i class="fa fa-plus"></i> New Playground</button>
+        </div>
+        <h4>My Playgrounds</h4>
+      </div>
+      <div class="panel-body" style="padding: 0">
+        @if (Model.Playgrounds.Any())
+        {
+          foreach (var playground in Model.Playgrounds.OrderByDescending(p => p.UpdateDate))
+          {
+            <div class="@playgroundClass" style="padding:5px">
+              <div class="btn btn-primary playground" data-id="@playground.PlaygroundId" style="width:100%">
+                @if (playground.IsShared)
+                {
+                  <i class="pull-right fa fa-share-alt-square fa-2x"></i>
+                }
+                <h4><i class="fa fa-folder-open-o" style="margin-right:10px"></i>@playground.Name</h4>
+                <table align="center" class="small">
+                  <tr>
+                    <th class="text-right">Created:</th>
+                    <td class="text-left" style="padding-left:5px;">@playground.CreationDate.ToString()</td>
+                  </tr>
+                  <tr>
+                    <th class="text-right">Updated:</th>
+                    <td class="text-left" style="padding-left:5px;">@playground.UpdateDate.ToString()</td>
+                  </tr>
+                </table>
+                <div class="btn-group btn-group-xs pull-right" style="margin-top:5px;">
+                  <button type="button" class="button-rename-playground btn btn-default" data-id="@playground.PlaygroundId" data-name="@playground.Name"><i class="fa fa-edit"></i> Rename...</button>
+                  <button type="button" class="button-delete-playground btn btn-warning" data-id="@playground.PlaygroundId" data-name="@playground.Name"><i class="fa fa-close"></i> Delete</button>
+                </div>
+              </div>
+            </div>
+          }
+        }
+        else
+        {
+            <p>No playgrounds found</p>
+        }
+      </div>
+    </div>
   </div>
-
-  <h3>All Playgrounds</h3>
-
-  <div class="clearfix"></div>
-  <div>
-    @if (Model.Playgrounds.Any())
-    {
-      foreach (var playground in Model.Playgrounds)
-      {
-        <div class="col-xs-12 col-sm-4 col-md-3" style="padding:5px">
-          <div class="btn btn-primary playground" data-id="@playground.PlaygroundId" style="width:100%">
-            <h4><i class="fa fa-folder-open-o" style="margin-right:10px"></i>@playground.Name</h4>
-            <table align="center" class="small">
-              <tr>
-                <th class="text-right">Created:</th>
-                <td class="text-left" style="padding-left:5px;">@playground.CreationDate.ToString()</td>
-              </tr>
-              <tr>
-                <th class="text-right">Updated:</th>
-                <td class="text-left" style="padding-left:5px;">@playground.UpdateDate.ToString()</td>
-              </tr>
-            </table>
-            <div class="btn-group btn-group-xs pull-right" style="margin-top:5px;">
-              <button type="button" class="button-rename-playground btn btn-default" data-id="@playground.PlaygroundId" data-name="@playground.Name"><i class="fa fa-edit"></i> Rename...</button>
-              <button type="button" class="button-delete-playground btn btn-warning" data-id="@playground.PlaygroundId" data-name="@playground.Name"><i class="fa fa-close"></i> Delete</button>
+  @if (hasShared)
+  {
+  <div class="col-md-6">
+    <div class="panel panel-default" style="margin-top: 15px;">
+      <div class="panel-heading">
+        <h4>Shared Playgrounds</h4>
+      </div>
+      <div class="panel-body" style="padding: 0">
+        @foreach (var playground in Model.SharedPlaygrounds.OrderByDescending(p => p.UpdateDate))
+        {
+          <div class="col-sm-6" style="padding:5px">
+            <div class="btn btn-default playground" data-user="@playground.UserName" data-id="@playground.PlaygroundId" style="width:100%">
+              <i class="pull-right fa fa-share-alt-square fa-2x"></i>
+              <h4><i class="fa fa-folder-open-o" style="margin-right:10px"></i>@playground.Name</h4>
+              <table align="center" class="small">
+                <tr>
+                  <th class="text-right">Created:</th>
+                  <td class="text-left" style="padding-left:5px;">@playground.CreationDate.ToString()</td>
+                </tr>
+                <tr>
+                  <th class="text-right">Updated:</th>
+                  <td class="text-left" style="padding-left:5px;">@playground.UpdateDate.ToString()</td>
+                </tr>
+              </table>
             </div>
           </div>
-        </div>
-      }
-    }
-    else
-    {
-        <p>No Playgrounds Found</p>
-    }
+        }
+      </div>
+    </div>
   </div>
+  }
 
-  <div class="clearfix"></div>
 </div>
+<div class="clearfix"></div>
 
 
 <div id="new-playground-modal" class="modal fade">
@@ -153,7 +193,12 @@
 
   $(document).on('click', '.playground', function () {
     var id = $(this).data('id');
-    window.location = '@Url.Content("~/Playground/Edit")/' + id;
+    var user = $(this).data('user');
+    var loc = '@Url.Content("~/Playground/Edit")/' + id;
+    if (!!user && user.length > 0) {
+      loc += '/' + encodeURIComponent(user);
+    }
+    window.location = loc;
   })
 
   $(document).on('click', '.button-rename-playground', function (e) {

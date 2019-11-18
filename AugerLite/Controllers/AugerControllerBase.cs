@@ -7,17 +7,19 @@ using System.Web.Mvc;
 
 namespace Auger.Controllers
 {
-    [Authorize]
     public abstract class AugerControllerBase : Controller
     {
         protected AugerContext _db = new AugerContext();
 
-        protected Course _GetCourse()
+        protected Course _GetCourse(int courseId = 0)
         {
             Course course = null;
             try
             {
-                var courseId = CookieManager.GetCourseId();
+                if (courseId == 0)
+                {
+                    courseId = CookieManager.GetCourseId();
+                }
                 if (User.IsInRole(UserRoles.SuperUserRole))
                 {
                     // a super user can see any course regardless of enrollment

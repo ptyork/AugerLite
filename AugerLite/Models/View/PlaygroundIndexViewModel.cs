@@ -12,5 +12,7 @@ namespace Auger.Models.View
     {
         public Course Course { get; set; } = null;
         public List<Playground> Playgrounds { get; set; } = new List<Playground>();
+        public List<Playground> SharedPlaygrounds { get; set; } = new List<Playground>();
+        public bool IsInstructorForCourse { get; set; } = false;
     }
 }

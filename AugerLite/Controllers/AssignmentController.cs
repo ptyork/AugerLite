@@ -250,8 +250,11 @@ namespace Auger.Controllers
                     return null;
                 }
 
-                SubmissionTester.TestSubmission(submission);
-                //db.Entry(submission).State = EntityState.Modified;
+                using (var t = new SubmissionTester(submission))
+                {
+                    t.TestAll();
+                }
+
                 _db.SaveChanges();
 
                 return new JsonNetResult(submission.PreSubmissionResults);

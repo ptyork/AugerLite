@@ -8,11 +8,17 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		HCB_APP_PROD|Any CPU = HCB_APP_PROD|Any CPU
+		HCB_APP_TEST|Any CPU = HCB_APP_TEST|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{34A934BC-12BD-4DEC-855E-D9D543F745D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{34A934BC-12BD-4DEC-855E-D9D543F745D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{34A934BC-12BD-4DEC-855E-D9D543F745D2}.HCB_APP_PROD|Any CPU.ActiveCfg = HCB_APP_PROD|Any CPU
+		{34A934BC-12BD-4DEC-855E-D9D543F745D2}.HCB_APP_PROD|Any CPU.Build.0 = HCB_APP_PROD|Any CPU
+		{34A934BC-12BD-4DEC-855E-D9D543F745D2}.HCB_APP_TEST|Any CPU.ActiveCfg = HCB_APP_TEST|Any CPU
+		{34A934BC-12BD-4DEC-855E-D9D543F745D2}.HCB_APP_TEST|Any CPU.Build.0 = HCB_APP_TEST|Any CPU
 		{34A934BC-12BD-4DEC-855E-D9D543F745D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{34A934BC-12BD-4DEC-855E-D9D543F745D2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection

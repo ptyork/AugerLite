@@ -1,6 +1,7 @@
 ﻿@using Auger.Models;
 @{
     ViewBag.Title = "Auger Admin Interface";
+    var activeSessions = ViewBag.ActiveSessions as IEnumerable<String>;
 }
 
 <ol class="breadcrumb">
@@ -22,5 +23,14 @@
     </a>
   </div>
 </div>
-
+@if (activeSessions != null && activeSessions.Count() > 0)
+{
+  <table>
+    <tr><th>Active Sessions</th></tr>
+    @foreach (var s in activeSessions)
+    {
+      <tr><td>@s</td></tr>
+    }
+  </table>
+}
 <div class="clearfix"></div>

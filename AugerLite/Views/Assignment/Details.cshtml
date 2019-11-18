@@ -16,7 +16,7 @@
   <li>@Model.Assignment.AssignmentName
 }
 
-<h3 style="margin-bottom:0;">
+<h3 style="margin-bottom:0;margin-top:10px;margin-right:-10px;">
   @Model.Assignment.AssignmentName
   <a href="~/Assignment/Edit/@Model.Assignment.AssignmentId" class="btn btn-primary pull-right hidden-xs" role="button">
     <span class="fa fa-edit"></span>&nbsp;Edit Assignment
@@ -51,8 +51,8 @@
 @if (hasSubmissions)
 {
   <div id="page-loading-div"></div>
-  <div id="results-div" class="hidden"> <!-- DEFAULT TO HIDDEN -->
-    <a id="retest" class="pull-right btn btn-sm btn-default" role="button">
+  <div id="results-div" class="hidden" style="margin:0 -15px;"> <!-- DEFAULT TO HIDDEN -->
+    <a id="retest" class="pull-right btn btn-sm btn-default" style="margin-right:5px;" role="button">
       <span class="fa fa-check"></span>&nbsp;Recheck
     </a>
     <ul class="nav nav-tabs" id="tabs">

@@ -10,11 +10,11 @@
   <li>Assignments
 }
 
-<h3>All Assignments</h3>
+<div class="clearfix"></div>
 
 <div class="row">
   <div class="col-md-6 col-xs-12">
-    <div class="panel panel-primary">
+    <div class="panel panel-primary" style="margin-top: 15px;">
       <div class="panel-heading"><h4>Unsubmitted Assignments</h4></div>
       <div class="panel-body" style="padding: 0">
         @if (Model.UnsubmittedAssignments.Any())
@@ -22,7 +22,7 @@
           foreach (var assignment in Model.UnsubmittedAssignments)
           {
             <div class="col-lg-6" style="padding:3px">
-              <a href="~/Assignment/Details/@assignment.AssignmentId" class="btn btn-default" style="width:100%">
+              <a href="~/Assignment/Details/@assignment.AssignmentId" class="btn btn-primary" style="width:100%">
                 <h4><i class="fa fa-folder-open-o" style="margin-right:10px"></i>@assignment.AssignmentName</h4>
                 <table align="center" class="small">
                   <tr>
@@ -42,7 +42,7 @@
     </div>
   </div>
   <div class="col-md-6 col-xs-12">
-    <div class="panel panel-primary">
+    <div class="panel panel-default" style="margin-top: 15px;">
       <div class="panel-heading"><h4>Submitted Assignments</h4></div>
       <div class="panel-body" style="padding: 0;">
         @if (Model.SubmittedAssignments.Any())

@@ -29,18 +29,40 @@ namespace Auger.Controllers
                     return null;
                 }
 
-                if (User?.GetName() != data.UserName)
+                repo = (T)Activator.CreateInstance(typeof(T), data.CourseId, data.UserName, data.RepositoryId, true);
+
+                var user = ApplicationUser.Current;
+                if (user == null)
                 {
                     return null;
                 }
 
-                repo = (T)Activator.CreateInstance(typeof(T), data.CourseId, data.UserName, data.RepositoryId, true);
+                // if this isn't the current user's repository and the user does not have sufficient rights,
+                // then the repository must be shared
+                if (!string.Equals(user.UserName, data.UserName, StringComparison.OrdinalIgnoreCase) && !user.IsInRole(UserRoles.SuperUserRole) && !user.IsInstructorForCourse(course))
+                {
+                    var pg = repo as PlaygroundRepository;
+                    if (pg != null)
+                    {
+                        if (!pg.GetIsShared())
+                        {
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+
+                // if we get here, all is well so return the repo
+                return repo;
             }
             catch (Exception ex)
             {
                 Elmah.ErrorSignal.FromCurrentContext().Raise(ex);
             }
-            return repo;
+            return null;
         }
 
         [HttpPost]
@@ -49,7 +71,9 @@ namespace Auger.Controllers
             var repo = _GetRepo(data);
             if (repo == null)
             {
-                return new HttpNotFoundResult();
+                string message = $"Unable to find repo for {data.CourseId} / {data.UserName} / {data.RepositoryId}";
+                Elmah.ErrorSignal.FromCurrentContext().Raise(new System.IO.FileNotFoundException(message));
+                return new HttpStatusCodeResult(HttpStatusCode.NotFound, message);
             }
             try
             {
@@ -76,6 +100,7 @@ namespace Auger.Controllers
             public class ImportableProject
             {
                 public string Type { get; set; }
+                public int CourseId { get; set; }
                 public int RepositoryId { get; set; }
                 public string Name { get; set; }
             }
@@ -94,9 +119,9 @@ namespace Auger.Controllers
                 return new HttpNotFoundResult();
             }
 
-            if (User?.GetName() != data.UserName)
+            if (User?.GetName()?.ToLowerInvariant() != data.UserName.ToLowerInvariant())
             {
-                return new HttpUnauthorizedResult();
+                return new HttpStatusCodeResult(HttpStatusCode.Forbidden, "Attempt to retrieve importable projects from another user.");
             }
 
             try
@@ -113,6 +138,7 @@ namespace Auger.Controllers
                     projects.Playgrounds.Add(new ImportableProjects.ImportableProject()
                     {
                         Type = ImportableProjects.Types.PLAYGROUND,
+                        CourseId = playground.CourseId,
                         RepositoryId = playground.PlaygroundId,
                         Name = playground.Name
                     });
@@ -120,7 +146,7 @@ namespace Auger.Controllers
 
                 var assignments = _db.StudentAssignments
                     .Include(sa => sa.Assignment.Course)
-                    .Where(sa => sa.Enrollment.UserName == data.UserName)
+                    .Where(sa => sa.Enrollment.UserName == data.UserName) // CASE INSENSITIVE
                     .OrderByDescending(sa => sa.Assignment.DateCreated);
                 foreach (var assignment in assignments)
                 {
@@ -136,6 +162,7 @@ namespace Auger.Controllers
                             projects.AssignmentWorkspaces.Add(new ImportableProjects.ImportableProject()
                             {
                                 Type = ImportableProjects.Types.WORKSPACE,
+                                CourseId = assignment.Assignment.CourseId,
                                 RepositoryId = assignment.AssignmentId.Value,
                                 Name = name
                             });
@@ -148,6 +175,7 @@ namespace Auger.Controllers
                             projects.AssignmentSubmissions.Add(new ImportableProjects.ImportableProject()
                             {
                                 Type = ImportableProjects.Types.SUBMISSION,
+                                CourseId = assignment.Assignment.CourseId,
                                 RepositoryId = assignment.AssignmentId.Value,
                                 Name = name
                             });
@@ -167,6 +195,8 @@ namespace Auger.Controllers
         public class ProjectImportPostData : IDEPostData
         {
             public string SourceType { get; set; }
+            public int SourceCourseId { get; set; }
+            public string SourceUserName { get; set; }
             public int SourceRepositoryId { get; set; }
         }
 
@@ -180,17 +210,19 @@ namespace Auger.Controllers
             }
 
             Repository sourceRepo = null;
+            int courseId = data.SourceCourseId > 0 ? data.SourceCourseId : data.CourseId;
             if (data.SourceType == ImportableProjects.Types.PLAYGROUND)
             {
-                sourceRepo = PlaygroundRepository.Get(data.CourseId, data.UserName, data.SourceRepositoryId);
+                string userName = String.IsNullOrWhiteSpace(data.SourceUserName) ? data.UserName : data.SourceUserName;
+                sourceRepo = PlaygroundRepository.Get(courseId, userName, data.SourceRepositoryId);
             }
             else if (data.SourceType == ImportableProjects.Types.WORKSPACE)
             {
-                sourceRepo = WorkRepository.Get(data.CourseId, data.UserName, data.SourceRepositoryId);
+                sourceRepo = WorkRepository.Get(courseId, data.UserName, data.SourceRepositoryId);
             }
             else if (data.SourceType == ImportableProjects.Types.SUBMISSION)
             {
-                sourceRepo = SubmissionRepository.Get(data.CourseId, data.UserName, data.SourceRepositoryId);
+                sourceRepo = SubmissionRepository.Get(courseId, data.UserName, data.SourceRepositoryId);
                 sourceRepo.Checkout();
             }
             if (sourceRepo == null)
@@ -563,6 +595,37 @@ namespace Auger.Controllers
                     }
                     return Json("success");
                 }
+            }
+            catch (Exception ex)
+            {
+                Elmah.ErrorSignal.FromCurrentContext().Raise(ex);
+                return new HttpStatusCodeResult(HttpStatusCode.InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpPost]
+        public ActionResult DownloadProject(IDEPostData data)
+        {
+            var repo = _GetRepo(data);
+            if (repo == null)
+            {
+                return new HttpNotFoundResult();
+            }
+            try
+            {
+                var name = "project.zip";
+                //var zip = new Ionic.Zip.ZipFile();
+                //zip.AddDirectory(repo.FilePath);
+                //var ents = zip.SelectEntries(".git");
+                //zip.RemoveEntries(ents);
+                //var str = new System.IO.MemoryStream();
+                //zip.Save(str);
+                //str.Flush();
+                //str.Seek(0, 0);
+                //zip.Dispose();
+                var str = repo.Folder.GetAsZipStream();
+                var file = File(str, "application/zip", name);
+                return file;
             }
             catch (Exception ex)
             {

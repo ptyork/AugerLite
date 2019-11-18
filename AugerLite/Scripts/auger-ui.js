@@ -83,11 +83,11 @@ if (!String.prototype.startsWith) {
     }());
     var toString = {}.toString;
     var startsWith = function (search) {
-      if (this == null) {
+      if (this === null) {
         throw TypeError();
       }
       var string = String(this);
-      if (search && toString.call(search) == '[object RegExp]') {
+      if (search && toString.call(search) === '[object RegExp]') {
         throw TypeError();
       }
       var stringLength = string.length;
@@ -96,7 +96,7 @@ if (!String.prototype.startsWith) {
       var position = arguments.length > 1 ? arguments[1] : undefined;
       // `ToInteger`
       var pos = position ? Number(position) : 0;
-      if (pos != pos) { // better `isNaN`
+      if (pos !== pos) { // better `isNaN`
         pos = 0;
       }
       var start = Math.min(Math.max(pos, 0), stringLength);
@@ -106,7 +106,7 @@ if (!String.prototype.startsWith) {
       }
       var index = -1;
       while (++index < searchLength) {
-        if (string.charCodeAt(start + index) != searchString.charCodeAt(index)) {
+        if (string.charCodeAt(start + index) !== searchString.charCodeAt(index)) {
           return false;
         }
       }
@@ -175,20 +175,25 @@ function hideLoadingDiv($elem) {
 
 function resizeFullHeightElements() {
   $('.full-height').each(function () {
-    $(this).height($(window).innerHeight() - this.getBoundingClientRect().top);
+    // TODO: Figure out a good way to make this work with mobile devices
+    var height = $(window).innerHeight() - this.getBoundingClientRect().top;
+    //height = height < 200 ? 200 : height;
+    $(this).height(height);
   });
 }
 $(window).on('resize', function () {
+  // resize on resize
   resizeFullHeightElements();
 }, 50);
 $(function () {
+  // resize on load
   resizeFullHeightElements();
 });
 
 function setInputSelection(input, startPos, endPos) {
   input = $(input)[0]; // work for both DOM and jQuery element
   input.focus();
-  if (typeof input.selectionStart != "undefined") {
+  if (typeof input.selectionStart !== "undefined") {
     input.selectionStart = startPos;
     input.selectionEnd = endPos;
   } else if (document.selection && document.selection.createRange) {
@@ -201,6 +206,24 @@ function setInputSelection(input, startPos, endPos) {
     range.select();
   }
 }
+
+function nextElement($all, $elem) {
+  var index = $all.index($elem);
+  if (index > -1 && index < $all.length - 1) {
+    return $all.eq(index + 1);
+  } else {
+    return $all.first();
+  }
+}
+function prevElement($all, $elem) {
+  var index = $all.index($elem);
+  if (index > 0) {
+    return $all.eq(index - 1);
+  } else {
+    return $all.last();
+  }
+}
+
 
 /* 
  * Context.js

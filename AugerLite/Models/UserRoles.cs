@@ -14,7 +14,6 @@
         public const string SuperUserRole = "SuperUser";
 
         private static string[] _allRoles;
-        private static string[] _allRolesLower;
 
         static UserRoles()
         {
@@ -27,15 +26,6 @@
                     ContentDeveloperRole,
                     MentorRole
                 };
-            _allRolesLower = new string[]
-                {
-                    LearnerRole.ToLowerInvariant(),
-                    InstructorRole.ToLowerInvariant(),
-                    AdministratorRole.ToLowerInvariant(),
-                    TeachingAssistantRole.ToLowerInvariant(),
-                    ContentDeveloperRole.ToLowerInvariant(),
-                    MentorRole.ToLowerInvariant()
-                };
         }
 
         public static string[] AllRoles
@@ -43,9 +33,9 @@
             get { return _allRoles; }
         }
 
-        public static string[] AllRolesLower
+        public static bool IsRole(string role)
         {
-            get { return _allRolesLower; }
+            return AllRoles.ContainsIgnoreCase(role.Trim());
         }
     }
 }

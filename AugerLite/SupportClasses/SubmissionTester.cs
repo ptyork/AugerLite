@@ -10,7 +10,7 @@ using System.Text;
 
 namespace Auger
 {
-    public static class SubmissionTester
+    public class SubmissionTester : IDisposable
     {
         private static string _augerBaseUrl = null;
         private static string _augerScriptLoader = null;
@@ -26,7 +26,7 @@ namespace Auger
                 virtualPath += "/";
 
             _augerBaseUrl = $"{requestUri.Scheme}://{requestUri.Authority}{virtualPath}";
-            var augerScriptUrl = $"{_augerBaseUrl}Scripts/auger.js?nogui";
+            var augerScriptUrl = $"{_augerBaseUrl}Scripts/auger-test-core.js";
 
             var loadScript = @"
 var loadScript = function (url, callback) {
@@ -60,74 +60,91 @@ if (typeof Auger === 'undefined') {{
 
             IsInitialized = true;
         }
+        
+        private TestResults _presubmissionResults = new TestResults();
+        private TestResults _fullResults = new TestResults();
+        private StudentSubmission _submission = null;
+        private Assignment _assignment = null;
+        private SubmissionRepository _repo = null;
+        private W3CValidator _validator = null;
+        private List<Device> _allDevices = new List<Device>();
+        private IBrowser _browser = null;
 
-        public static void TestSubmission(StudentSubmission submission)
+        public SubmissionTester(StudentSubmission submission)
         {
-            TestResults preres = new TestResults();
-            TestResults fullres = new TestResults();
-            List<String> checkedCssFiles = new List<string>();
+            _submission = submission;
+            _assignment = submission.StudentAssignment.Assignment;
 
-            var repo = SubmissionRepository.Get(submission.StudentAssignment);
-            repo.Checkout(submission.CommitId);
+            _repo = SubmissionRepository.Get(submission.StudentAssignment);
+            _repo.Checkout(submission.CommitId);
 
-            var assignment = submission.StudentAssignment.Assignment;
+            _validator = new W3CValidator(_repo.FileUri);
 
-            var allDeviceIds = assignment.AllScripts.Select(s => s.DeviceId).Distinct();
-            List<Device> allDevices = new List<Device>();
+            var allDeviceIds = _assignment.AllScripts.Select(s => s.DeviceId).Distinct();
             foreach (var deviceId in allDeviceIds)
             {
-                allDevices.Add(Device.Parse(deviceId));
+                _allDevices.Add(Device.Parse(deviceId));
             }
-            if (allDevices.Count == 0) allDevices.Add(Device.Large);
+            if (_allDevices.Count == 0) _allDevices.Add(Device.Large);
 
-            using (var browser = BrowserFactory.GetDriver())
+            _browser = BrowserFactory.GetDriver();
+            if (_browser != null)
             {
-                if (browser != null)
-                {
-                    if (assignment.Pages.Any())
-                    {
-                        foreach (var page in assignment.Pages)
-                        {
-                            var pageUri = new Uri(repo.FileUri, page.PageName);
-
-                            string pageText = null;
-
-                            if (RequestHelper.GetPageText(pageUri, out pageText))
-                            {
-                                var res = W3CValidator.ValidateHTML(page.PageName, pageText);
-                                res.AppendResults(W3CValidator.ValidateCSS(repo.FileUri, checkedCssFiles, pageText));
-                                preres.AppendResults(res);
-                                fullres.AppendResults(res);
-
-                                foreach (var device in allDevices)
-                                {
-                                    browser.SetWindowSize(device.ViewportWidth, device.ViewportHeight);
-                                    preres.AppendResults(TestPage(browser, pageUri, assignment, page, device.ViewportWidth, true));
-                                    fullres.AppendResults(TestPage(browser, pageUri, assignment, page, device.ViewportWidth, false));
-                                }
-                            }
-                            else
-                            {
-                                preres.Exceptions.Add($"{page.PageName} not found");
-                                fullres.Exceptions.Add($"{page.PageName} not found");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        var folder = repo.GetFolder();
-                        _TestFolder(folder, preres, fullres, checkedCssFiles, assignment, allDevices, browser);
-                    }
-                }
+                _browser.SetWindowSize(Device.Large.ViewportWidth, Device.Large.ViewportHeight);
             }
-
-            preres.DomTestComplete = true;
-            fullres.DomTestComplete = true;
-            submission.PreSubmissionResults = preres;
-            submission.FullResults = fullres;
         }
 
-        private static void _TestFolder(RepoFolder folder, TestResults preres, TestResults fullres, List<string> checkedCssFiles, Assignment assignment, List<Device> allDevices, IBrowser browser)
+        public void TestAll()
+        {
+            if (_browser != null)
+            {
+                // If an assignment has pages defined, assume that we should ONLY test
+                // the pages defined for that assignment. Helps to find missing pages.
+                if (_assignment.Pages.Any())
+                {
+                    foreach (var page in _assignment.Pages)
+                    {
+                        var pageUri = new Uri(_repo.FileUri, page.PageName);
+
+                        string pageText = null;
+
+                        if (RequestHelper.GetPageText(pageUri, out pageText))
+                        {
+                            _validator.ValidatePage(page.PageName, pageText);
+
+                            foreach (var device in _allDevices)
+                            {
+                                _browser.SetWindowSize(device.ViewportWidth, device.ViewportHeight);
+                                _presubmissionResults.AppendResults(TestPage(pageUri, page, true));
+                                _fullResults.AppendResults(TestPage(pageUri, page, false));
+                            }
+                        }
+                        else
+                        {
+                            _presubmissionResults.Exceptions.Add($"{page.PageName} not found");
+                            _fullResults.Exceptions.Add($"{page.PageName} not found");
+                        }
+                    }
+                }
+                // If an assignment has no pages defined, assume that we should test
+                // ALL pages in the repository.
+                else
+                {
+                    var folder = _repo.GetFolder();
+                    _TestFolder(folder);
+                }
+
+                _presubmissionResults.AppendResults(_validator.Results);
+                _fullResults.AppendResults(_validator.Results);
+                _presubmissionResults.DomTestComplete = true;
+                _fullResults.DomTestComplete = true;
+            }
+
+            _submission.PreSubmissionResults = _presubmissionResults;
+            _submission.FullResults = _fullResults;
+        }
+
+        private void _TestFolder(RepoFolder folder)
         {
             foreach (var file in folder.Files.Where(f => f.Type == FileType.html))
             {
@@ -137,32 +154,29 @@ if (typeof Auger === 'undefined') {{
 
                 if (RequestHelper.GetPageText(pageUri, out pageText))
                 {
-                    var res = W3CValidator.ValidateHTML(file.Name, pageText);
-                    res.AppendResults(W3CValidator.ValidateCSS(folder.Uri, checkedCssFiles, pageText));
-                    preres.AppendResults(res);
-                    fullres.AppendResults(res);
+                    _validator.ValidatePage(file.Name, pageText);
 
-                    foreach (var device in allDevices)
+                    foreach (var device in _allDevices)
                     {
-                        browser.SetWindowSize(device.ViewportWidth, device.ViewportHeight);
-                        preres.AppendResults(TestPage(browser, pageUri, assignment, null, device.ViewportWidth, true));
-                        fullres.AppendResults(TestPage(browser, pageUri, assignment, null, device.ViewportWidth, false));
+                        _browser.SetWindowSize(device.ViewportWidth, device.ViewportHeight);
+                        _presubmissionResults.AppendResults(TestPage(pageUri, null, true));
+                        _fullResults.AppendResults(TestPage(pageUri, null, false));
                     }
                 }
             }
             foreach (var subfolder in folder.Folders)
             {
-                _TestFolder(subfolder, preres, fullres, checkedCssFiles, assignment, allDevices, browser);
+                _TestFolder(subfolder);
             }
         }
 
-        public static TestResults TestPage(IBrowser browser, Uri pageUri, Assignment assignment, Page page, int viewportWidth, bool preTest)
+        public TestResults TestPage(Uri pageUri, Page page, bool preTest = true)
         {
             TestResults results = new TestResults();
 
             var script = preTest ?
-                GetPreTestScript(assignment, page, viewportWidth) :
-                GetTestScript(assignment, page, viewportWidth);
+                GetPreTestScript(_assignment, page, _browser.WindowSize.Width) :
+                GetTestScript(_assignment, page, _browser.WindowSize.Width);
 
             if (string.IsNullOrWhiteSpace(script))
             {
@@ -177,12 +191,12 @@ Auger.Init(function () {{
 }});
 ";
 
-            browser.LoadPage(pageUri.ToString());
+            _browser.LoadPage(pageUri.ToString());
             try
             {
-                browser.ExecuteAsyncScript(_augerScriptLoader);
+                _browser.ExecuteAsyncScript(_augerScriptLoader);
 
-                var junkResult = browser.ExecuteAsyncScript(script); // seriously, I really JUST want a string folks
+                var junkResult = _browser.ExecuteAsyncScript(script); // seriously, I really JUST want a string folks
                 var json = JsonConvert.SerializeObject(junkResult);
                 results.AppendResults(JsonConvert.DeserializeObject<TestResults>(json));
             }
@@ -196,7 +210,14 @@ Auger.Init(function () {{
                 results.Exceptions.Add($"Unexpected error while running test script for {pageUri.Segments.LastOrDefault()}: {ex.Message}");
                 Elmah.ErrorSignal.FromCurrentContext().Raise(ex);
             }
-
+            finally
+            {
+                foreach (var entry in _browser.BrowserLog)
+                {
+                    System.Diagnostics.Debug.WriteLine(entry.Message);
+                    results.DebugMessages.Add(entry.Message);
+                }
+            }
             return results;
         }
 
@@ -246,6 +267,47 @@ Auger.Init(function () {{
 
             return scriptSB.ToString();
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    _browser.Dispose();
+                }
+
+                _presubmissionResults = null;
+                _fullResults = null;
+                _submission = null;
+                _assignment = null;
+                _repo = null;
+                _validator = null;
+                _allDevices = null;
+                _browser = null;
+
+                disposedValue = true;
+            }
+        }
+
+        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // ~SubmissionTester() {
+        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        //   Dispose(false);
+        // }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
 
     }
 }

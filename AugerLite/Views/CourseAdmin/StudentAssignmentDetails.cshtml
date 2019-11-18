@@ -10,6 +10,7 @@
     ViewBag.Title = "View " + assignment.AssignmentName + " for " + enrollment.UserName;
     ViewBag.BodyClass = "full";
     ViewBag.BrowseRoot = @Url.Content($"~/BrowseUser/{course.CourseId}/{enrollment.UserName}/{assignment.AssignmentId}");
+    ViewBag.ShowDebug = true;
 }
 
 @section Breadcrumbs {

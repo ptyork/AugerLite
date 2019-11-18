@@ -26,15 +26,32 @@ namespace Auger
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
 
-            TemplateManager.Init(Server.MapPath("~/app_data/templates/"));
-            SubmissionRepository.Init(Server.MapPath("~/app_data/repo/"));
-            WorkRepository.Init(Server.MapPath("~/app_data/work/"));
-            PlaygroundRepository.Init(Server.MapPath("~/app_data/play/"));
-            TempDir.Init(Server.MapPath("~/app_data/temp/"));
+            TemplateManager.Init(GetPath("AugerTemplateDir"));
+            SubmissionRepository.Init(GetPath("AugerSubmissionDir"));
+            WorkRepository.Init(GetPath("AugerWorkDir"));
+            PlaygroundRepository.Init(GetPath("AugerPlaygroundDir"));
+            TempDir.Init(GetPath("AugerTempDir"));
+            //TemplateManager.Init(Server.MapPath("~/app_data/templates/"));
+            //SubmissionRepository.Init(Server.MapPath("~/app_data/repo/"));
+            //WorkRepository.Init(Server.MapPath("~/app_data/work/"));
+            //PlaygroundRepository.Init(Server.MapPath("~/app_data/play/"));
+            //TempDir.Init(Server.MapPath("~/app_data/temp/"));
 
             //HostingEnvironment.RegisterVirtualPathProvider(new RepositoryVPP());
 
             HttpContext.Current.Server.ScriptTimeout = 2400;
+        }
+
+        private string GetPath(string settingsKey)
+        {
+            var path = System.Web.Configuration.WebConfigurationManager.AppSettings[settingsKey];
+
+            if (path.Contains("~"))
+            {
+                path = Server.MapPath(path);
+            }
+
+            return path;
         }
 
         protected void Application_BeginRequest()

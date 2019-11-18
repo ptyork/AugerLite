@@ -13,6 +13,8 @@ namespace Auger.Models
         public string Name { get; set; }
         public DateTime CreationDate { get; set; }
         public DateTime UpdateDate { get; set; }
+        public bool IsOwner { get; set; } = true;
+        public bool IsShared { get; set; }
 
         public Playground(PlaygroundRepository repo)
         {
@@ -22,6 +24,7 @@ namespace Auger.Models
             this.Name = repo.GetName();
             this.CreationDate = repo.Folder.CreationTime;
             this.UpdateDate = repo.Folder.LastWriteTime;
+            this.IsShared = repo.GetIsShared();
         }
     }
 }

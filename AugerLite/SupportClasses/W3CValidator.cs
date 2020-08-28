@@ -15,6 +15,9 @@ namespace Auger
 {
     public class W3CValidator
     {
+        //private const string VALIDATOR_URL = "https://validator.w3.org/nu/";
+        private const string VALIDATOR_URL = "https://validator.nu/";
+
         private Uri _baseUri;
         private List<string> _checkedFiles = new List<string>();
 
@@ -89,7 +92,7 @@ namespace Auger
             try
             {
                 var req = HttpWebRequest.CreateHttp(
-                    "https://checker.html5.org/?out=json&level=error"
+                    VALIDATOR_URL + "?out=json&level=error"
                 );
                 req.Method = "POST";
                 var type = isCSS ? "css" : "html";

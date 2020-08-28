@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,7 +14,9 @@ namespace Auger.Models
         {
             Info = 0,
             Warning = 1,
-            Error = 2
+            Error = 2,
+            [EnumMember(Value = "non-document-error")]
+            NonDocumentError = 3
         }
 
         public string Page { get; set; }

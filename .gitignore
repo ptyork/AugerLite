@@ -225,3 +225,9 @@ FakesAssemblies/
 **/*.Server/GeneratedArtifacts
 **/*.Server/ModelManifest.xml
 _Pvt_Extensions
+
+AugerLite/wget.exe
+
+AugerLite/Web.HCB_APP_TEST.config
+
+AugerLite/Web.HCB_APP_PROD.config

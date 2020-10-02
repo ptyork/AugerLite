@@ -15,8 +15,8 @@ namespace Auger
 {
     public class W3CValidator
     {
-        //private const string VALIDATOR_URL = "https://validator.w3.org/nu/";
-        private const string VALIDATOR_URL = "https://validator.nu/";
+        private const string VALIDATOR_URL = "https://validator.w3.org/nu/";
+        //private const string VALIDATOR_URL = "https://validator.nu/";
 
         private Uri _baseUri;
         private List<string> _checkedFiles = new List<string>();
@@ -71,11 +71,11 @@ namespace Auger
                     }
                     catch (Exception e)
                     {
-                        Results.W3CCssValidationMessages.Add(new W3CCssValidationMessage()
+                        Results.W3CCssValidationMessagesNew.Add(new W3CHtmlValidationMessage()
                         {
-                            File = linkHref,
-                            Level = W3CCssValidationMessage.MessageLevels.Warning,
-                            Message = "Unable to perform CSS Validation"
+                            Page = linkHref,
+                            Type = W3CHtmlValidationMessage.MessageTypes.NonDocumentError,
+                            Message = $"Unable to perform CSS Validation"
                         });
                         Elmah.ErrorSignal.FromCurrentContext().Raise(e);
                     }
@@ -91,6 +91,8 @@ namespace Auger
 
             try
             {
+                ServicePointManager.Expect100Continue = true;
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                 var req = HttpWebRequest.CreateHttp(
                     VALIDATOR_URL + "?out=json&level=error"
                 );
@@ -135,11 +137,24 @@ namespace Auger
             }
             catch (Exception e)
             {
-                results.W3CHtmlValidationMessages.Add(new W3CHtmlValidationMessage()
+                if (isCSS)
                 {
-                    Type = W3CHtmlValidationMessage.MessageTypes.Warning,
-                    Message = "Unable to perform HTML Validation"
-                });
+                    results.W3CCssValidationMessagesNew.Add(new W3CHtmlValidationMessage()
+                    {
+                        Page = fileName,
+                        Type = W3CHtmlValidationMessage.MessageTypes.NonDocumentError,
+                        Message = $"Unable to perform CSS Validation"
+                    });
+                }
+                else
+                {
+                    results.W3CHtmlValidationMessages.Add(new W3CHtmlValidationMessage()
+                    {
+                        Page = fileName,
+                        Type = W3CHtmlValidationMessage.MessageTypes.NonDocumentError,
+                        Message = $"Unable to perform HTML Validation"
+                    });
+                }
                 Elmah.ErrorSignal.FromCurrentContext().Raise(e);
             }
             return results;

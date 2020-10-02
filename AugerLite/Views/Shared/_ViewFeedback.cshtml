@@ -98,14 +98,15 @@
     fb.HtmlPanelClass = "danger";
     if (fb.HtmlValidationCompleted) {
       fb.HtmlMessages = fb.W3CHtmlValidationMessages.filter(
-        function (m) { return m.Type && m.Type.toLowerCase() === 'error' }
+        function (m) { return m.Type && m.Type.toLowerCase().indexOf('error') >= 0 }
       );
       fb.HtmlMessageCount = fb.HtmlMessages.length;
       fb.HasHtmlMessages = fb.HtmlMessageCount > 0;
       if (!fb.HasHtmlMessages) fb.HtmlPanelClass = "success";
       for (var i = 0; i < fb.HtmlMessages.length; i++) {
         var message = fb.HtmlMessages[i];
-        if (!!message.Extract) {
+        message.HasExtract = !!message.Extract;
+        if (message.HasExtract) {
           message.Extract1 = message.Extract;
           var start = message.HiliteStart;
           var len = message.HiliteLength;
@@ -123,15 +124,17 @@
     fb.CssPanelClass = "danger";
     if (fb.CssValidationCompleted) {
       if (fb.W3CCssValidationMessagesNew.length > 0) {
+        // NEW (NU) CSS VALIDATION MESSAGES
         fb.CssMessages = fb.W3CCssValidationMessagesNew.filter(
-          function (m) { return m.Type && m.Type.toLowerCase() === 'error' }
+          function (m) { return m.Type && m.Type.toLowerCase().indexOf('error') >= 0 }
         );
         fb.CssMessageCount = fb.CssMessages.length;
         fb.HasCssMessages = fb.CssMessageCount > 0;
         if (!fb.HasCssMessages) fb.CssPanelClass = "success";
         for (var i = 0; i < fb.CssMessages.length; i++) {
           var message = fb.CssMessages[i];
-          if (!!message.Extract) {
+          message.HasExtract = !!message.Extract;
+          if (message.HasExtract) {
             message.Extract1 = message.Extract;
             var start = message.HiliteStart;
             var len = message.HiliteLength;
@@ -146,6 +149,7 @@
           page.CssMessages.push(message);
         }
       } else {
+        // OLD (LEGACY) CSS VALIDATION MESSAGES
         fb.CssMessages = fb.W3CCssValidationMessages.filter(function (m) { return m.Type && m.Type.toLowerCase() === 'error' });
         fb.CssErrorCount = fb.CssMessages.length;
         fb.HasCssErrors = fb.CssErrorCount > 0;
@@ -272,10 +276,15 @@
                   <h4><i class="fa fa-file-code-o"></i> {{Name}}</h4>
                 </li>
                 {{#HtmlMessages}}
-                  <li>
-                    line {{LastLine}}: {{Message}}
-                    <pre class="auger-extract">...{{Extract1}}<span class="auger-hilite">{{Extract2}}</span>{{Extract3}}...</pre>
-                  </li>
+                  {{#HasExtract}}
+                    <li>
+                      line {{LastLine}}: {{Message}}
+                      <pre class="auger-extract">...{{Extract1}}<span class="auger-hilite">{{Extract2}}</span>{{Extract3}}...</pre>
+                    </li>
+                  {{/HasExtract}}
+                  {{^HasExtract}}
+                    <li>{{Message}}</li>
+                  {{/HasExtract}}
                 {{/HtmlMessages}}
               {{/HasHtmlMessages}}
             {{/Pages}}
@@ -329,10 +338,15 @@
                 </li>
                 {{#IsNewCssFormat}}
                   {{#CssMessages}}
-                    <li>
-                      line {{LastLine}}: {{Message}}
-                      <pre class="auger-extract">...{{Extract1}}<span class="auger-hilite">{{Extract2}}</span>{{Extract3}}...</pre>
-                    </li>
+                    {{#HasExtract}}
+                      <li>
+                        line {{LastLine}}: {{Message}}
+                        <pre class="auger-extract">...{{Extract1}}<span class="auger-hilite">{{Extract2}}</span>{{Extract3}}...</pre>
+                      </li>
+                    {{/HasExtract}}
+                    {{^HasExtract}}
+                      <li>{{Message}}</li>
+                    {{/HasExtract}}
                   {{/CssMessages}}
                 {{/IsNewCssFormat}}
                 {{^IsNewCssFormat}}

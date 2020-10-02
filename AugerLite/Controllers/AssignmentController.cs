@@ -159,6 +159,7 @@ namespace Auger.Controllers
             try
             {
                 var submission = _db.StudentSubmissions
+                    .Where(ss => ss.StudentAssignment.Enrollment.CourseId == data.CourseId)
                     .Where(ss => ss.StudentAssignment.Enrollment.UserId == user.Id)
                     .Where(ss => ss.StudentAssignment.AssignmentId == data.AssignmentId)
                     .Where(ss => ss.StudentSubmissionId == data.SubmissionId)

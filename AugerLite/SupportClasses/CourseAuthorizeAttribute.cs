@@ -58,26 +58,7 @@ namespace Auger
 
             using (var db = new AugerContext())
             {
-                var enrollment = db.Enrollments.Where(e => e.CourseId == courseId && e.UserId == user.Id).FirstOrDefault();
-
-                if (enrollment == null)
-                {
-                    return false;
-                }
-
-                if (_allowedRoles.Length == 0)
-                {
-                    return true;
-                }
-
-                foreach (var role in _allowedRoles)
-                {
-                    if (enrollment.IsInRole(role))
-                    {
-                        return true;
-                    }
-                }
-            }
+             }
 
             return false;
         }
